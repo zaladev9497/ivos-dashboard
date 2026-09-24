@@ -33,6 +33,7 @@ export default function SettingsForm({ calendar }) {
   const [smsRedirectTo, setSmsRedirectTo] = useState(calendar?.sms_redirect_to ?? '')
   const [testOnly, setTestOnly] = useState(calendar?.test_only ?? false)
   const [demoMode, setDemoMode] = useState(calendar?.demo_mode ?? false)
+  const [demoPollInterval, setDemoPollInterval] = useState(calendar?.demo_poll_interval_seconds ?? 10)
 
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState(null)
@@ -57,6 +58,7 @@ export default function SettingsForm({ calendar }) {
       if ('test_only' in fields) setTestOnly(fields.test_only)
       if ('sms_redirect_to' in fields) setSmsRedirectTo(fields.sms_redirect_to)
       if ('demo_mode' in fields) setDemoMode(fields.demo_mode)
+      if ('demo_poll_interval_seconds' in fields) setDemoPollInterval(fields.demo_poll_interval_seconds)
     }
   }
 
@@ -326,11 +328,28 @@ export default function SettingsForm({ calendar }) {
                 <span className="text-xs text-slate-400">Enable test-only mode first</span>
               )}
             </div>
-            {demoMode && (
-              <p className="mt-2 text-xs text-slate-400">
-                The follow-up poller must run at least once a minute for demo mode to feel live.
-              </p>
-            )}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-slate-500">Poller interval:</span>
+              <input
+                type="number"
+                min="1"
+                max="3600"
+                value={demoPollInterval}
+                onChange={e => setDemoPollInterval(parseInt(e.target.value, 10) || 10)}
+                className="w-20 rounded border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+              />
+              <span className="text-xs text-slate-500">seconds</span>
+              <button
+                onClick={() => doSave({ demo_poll_interval_seconds: demoPollInterval })}
+                disabled={saving}
+                className="rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+              >
+                Save
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              The follow-up poller must run at this interval for demo mode to feel live.
+            </p>
           </Field>
         </div>
       </div>
@@ -352,6 +371,7 @@ export default function SettingsForm({ calendar }) {
           setSmsRedirectTo(calendar?.sms_redirect_to ?? '')
           setTestOnly(calendar?.test_only ?? false)
           setDemoMode(calendar?.demo_mode ?? false)
+          setDemoPollInterval(calendar?.demo_poll_interval_seconds ?? 10)
           setConfirm(null)
         }}
       />
