@@ -12,6 +12,7 @@ import {
   getLeadGlasshouseEvents,
   getLeadGlasshousePromotion,
   getLeadNcOrders,
+  getTemplates,
 } from '@/lib/queries'
 import LeadSidebar from './LeadSidebar'
 import Timeline from './Timeline'
@@ -43,6 +44,7 @@ export default async function LeadDetailPage({ params }) {
     ghEvents,
     ghPromotion,
     ncOrders,
+    allTemplates,
   ] = await Promise.all([
     safe(getLeadJourneys(id), []),
     safe(getLeadMessages(id), []),
@@ -54,7 +56,11 @@ export default async function LeadDetailPage({ params }) {
     safe(getLeadGlasshouseEvents(id), []),
     safe(getLeadGlasshousePromotion(id), null),
     safe(getLeadNcOrders(id), []),
+    safe(getTemplates(), []),
   ])
+
+  const templateLabels = {}
+  for (const t of allTemplates) templateLabels[t.template_key] = t
 
   return (
     <div className="space-y-4">
@@ -78,6 +84,7 @@ export default async function LeadDetailPage({ params }) {
           ghEvents={ghEvents}
           ghPromotion={ghPromotion}
           ncOrders={ncOrders}
+          templateLabels={templateLabels}
         />
 
         {/* Sidebar */}

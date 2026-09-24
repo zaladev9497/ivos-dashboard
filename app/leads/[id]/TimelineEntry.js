@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Badge from '@/components/Badge'
-import { formatDate, relativeTime } from '@/lib/utils'
+import { formatDate, formatTime, relativeTime } from '@/lib/utils'
 
 function Chevron({ open }) {
   return (
@@ -14,54 +14,40 @@ function Chevron({ open }) {
   )
 }
 
-// ─── Smart payload renderers per event type ────────────────────────────────────
+// ─── Smart payload renderer (for "Show details" expanded view) ────────────────
 
-function renderPayload(type, payload) {
+function renderPayload(rawKey, payload) {
   if (!payload) return null
 
-  // brief_written — Jobber note write attempt
-  if (type === 'brief_written' || type === 'note_written') {
-    const gqlErrors = payload.graphql_errors ?? []
-    const userErrors = payload.user_errors ?? []
-    const allErrors = [
-      ...gqlErrors.map((e) => e?.message).filter(Boolean),
-      ...userErrors.map((e) => e?.message ?? JSON.stringify(e)).filter(Boolean),
-    ]
-    if (allErrors.length > 0) {
+  // brief_written / note_written
+  if (rawKey === 'brief_written' || rawKey === 'note_written') {
+    const errs = [
+      ...(payload.graphql_errors ?? []).map(e => e?.message),
+      ...(payload.user_errors ?? []).map(e => e?.message ?? JSON.stringify(e)),
+    ].filter(Boolean)
+    if (errs.length) {
       return (
         <div className="mt-2 rounded bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700 space-y-1">
           <p className="font-semibold">Failed to write note to Jobber</p>
-          {allErrors.map((msg, i) => <p key={i}>{msg}</p>)}
+          {errs.map((msg, i) => <p key={i}>{msg}</p>)}
         </div>
       )
     }
     return (
       <div className="mt-2 rounded bg-green-50 border border-green-100 px-3 py-2 text-xs text-green-700">
         Note saved to Jobber.
-        {payload.note_id && (
-          <span className="ml-1 text-green-500 font-mono">ID: {payload.note_id}</span>
-        )}
-        {payload.replaced && <span className="ml-1">(replaced existing note)</span>}
+        {payload.note_id && <span className="ml-1 font-mono text-green-500">ID: {payload.note_id}</span>}
+        {payload.replaced && <span className="ml-1">(replaced existing)</span>}
       </div>
     )
   }
 
-  // SMS sent / received — show body text
-  if (payload.body || payload.text || payload.message) {
-    return (
-      <div className="mt-2 rounded bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-700 whitespace-pre-wrap">
-        {payload.body ?? payload.text ?? payload.message}
-      </div>
-    )
-  }
-
-  // quote events
-  if (type?.includes('quote')) {
+  // Quote events
+  if (rawKey?.includes('quote')) {
     const lines = [
       payload.quote_number && `Quote #${payload.quote_number}`,
       payload.quote_status && `Status: ${payload.quote_status}`,
       payload.quote_total != null && `Total: $${payload.quote_total}`,
-      payload.sent_to && `Sent to: ${payload.sent_to}`,
       payload.expires_at && `Expires: ${formatDate(payload.expires_at)}`,
     ].filter(Boolean)
     if (lines.length) {
@@ -73,8 +59,8 @@ function renderPayload(type, payload) {
     }
   }
 
-  // assessment events
-  if (type?.includes('assessment')) {
+  // Assessment events
+  if (rawKey?.includes('assessment')) {
     const lines = [
       payload.assessment_id && `Assessment ID: ${payload.assessment_id}`,
       payload.status && `Status: ${payload.status}`,
@@ -90,31 +76,30 @@ function renderPayload(type, payload) {
     }
   }
 
-  // errors / exceptions — surface them clearly
-  const errorMsg = payload.error ?? payload.error_message ?? payload.reason
-  if (errorMsg) {
+  // Errors
+  const errMsg = payload.error ?? payload.error_message ?? payload.reason
+  if (errMsg) {
     return (
       <div className="mt-2 rounded bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
-        {errorMsg}
+        {errMsg}
       </div>
     )
   }
 
-  // fallback: raw JSON but only if there's something meaningful
+  // Fallback: raw JSON
   const keys = Object.keys(payload)
-  if (keys.length === 0) return null
+  if (!keys.length) return null
   return (
     <pre className="mt-2 rounded bg-slate-900 text-slate-100 text-xs px-3 py-2 overflow-x-auto whitespace-pre-wrap wrap-break-word">
       {JSON.stringify(payload, null, 2)}
     </pre>
   )
-
 }
 
 // ─── Expanded content ──────────────────────────────────────────────────────────
 
 function ExpandedContent({ item }) {
-  // SMS body stored directly on item
+  // Full SMS body
   if (item.body) {
     return (
       <div className="mt-2 rounded bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-700 whitespace-pre-wrap">
@@ -123,7 +108,7 @@ function ExpandedContent({ item }) {
     )
   }
 
-  // GlassHouse conversation
+  // GlassHouse conversation bubbles
   if (item.ghConversation?.length > 0) {
     return (
       <div className="mt-2 space-y-1.5">
@@ -143,8 +128,13 @@ function ExpandedContent({ item }) {
 
   // Smart payload rendering
   if (item.payload) {
-    const rendered = renderPayload(item.type === 'lead_event' ? item.title : item.type, item.payload)
+    const rendered = renderPayload(item.rawKey, item.payload)
     if (rendered) return rendered
+  }
+
+  // Raw key fallback
+  if (item.rawKey) {
+    return <p className="mt-2 text-xs text-slate-400 font-mono">{item.rawKey}</p>
   }
 
   return <p className="mt-2 text-xs text-slate-400 italic">No additional data stored.</p>
@@ -156,33 +146,45 @@ function hasExpandable(item) {
 
 // ─── Entry ─────────────────────────────────────────────────────────────────────
 
-export default function TimelineEntry({ item }) {
+export default function TimelineEntry({ item, showDate = false }) {
   const [open, setOpen] = useState(false)
   const expandable = hasExpandable(item)
 
+  // Redirect note: neutral amber instead of red
+  const isRedirectedOnly = item.redirected && !item.failed
+
   return (
-    <div className={`flex gap-3 ${item.upcoming ? 'opacity-70' : ''}`}>
+    <div className={`flex gap-3 py-2 ${item.upcoming ? 'opacity-75' : ''}`}>
+      {/* Icon */}
       <div className="shrink-0 w-6 text-center mt-0.5">
-        <span className={`text-base font-mono ${item.iconColor}`}>{item.icon}</span>
+        <span className={`text-sm font-mono ${item.iconColor}`}>{item.icon}</span>
       </div>
 
-      <div className="flex-1 min-w-0 pb-5">
+      <div className="flex-1 min-w-0">
+        {/* Title row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <span className="font-medium text-sm text-slate-800">{item.title}</span>
-            {item.status && <Badge label={item.status} status={item.status} />}
-            {item.source && (
-              <span className="text-xs text-slate-400 font-mono">{item.source}</span>
+            <span className="font-medium text-sm text-slate-800 leading-snug">{item.title}</span>
+            {item.status && !isRedirectedOnly && (
+              <Badge label={item.status} status={item.status} />
             )}
           </div>
-          <div className="flex items-start gap-2 shrink-0">
+
+          {/* Timestamp + expand button */}
+          <div className="flex items-start gap-1.5 shrink-0">
             <time dateTime={item.ts} className="text-right leading-tight">
-              <span className="block text-xs text-slate-500">{formatDate(item.ts)}</span>
-              <span className="block text-xs text-slate-400">{relativeTime(item.ts)}</span>
+              {showDate ? (
+                <>
+                  <span className="block text-xs text-slate-500">{formatDate(item.ts)}</span>
+                  <span className="block text-xs text-slate-400">{relativeTime(item.ts)}</span>
+                </>
+              ) : (
+                <span className="text-xs text-slate-400">{formatTime(item.ts)}</span>
+              )}
             </time>
             {expandable && (
               <button
-                onClick={() => setOpen((v) => !v)}
+                onClick={() => setOpen(v => !v)}
                 className="mt-0.5 p-0.5 rounded hover:bg-slate-100 transition-colors"
                 aria-label={open ? 'Collapse' : 'Expand'}
               >
@@ -192,10 +194,22 @@ export default function TimelineEntry({ item }) {
           </div>
         </div>
 
-        {item.detail && (
-          <p className="mt-0.5 text-xs text-slate-500">{item.detail}</p>
+        {/* One-line summary — always visible, no expansion needed */}
+        {item.summary && (
+          <p className={`mt-0.5 text-xs leading-relaxed ${
+            item.redirected
+              ? 'text-amber-600'
+              : item.status === 'failed' || item.type === 'exception'
+              ? 'text-red-600'
+              : item.status === 'suppressed' || item.status === 'cancelled'
+              ? 'text-slate-400 italic'
+              : 'text-slate-500'
+          }`}>
+            {item.summary}
+          </p>
         )}
 
+        {/* Show details toggle */}
         {expandable && !open && (
           <button
             onClick={() => setOpen(true)}
