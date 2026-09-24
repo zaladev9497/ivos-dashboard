@@ -19,7 +19,7 @@ export async function updateBusinessCalendar(fields) {
   const { error } = await sb
     .from('business_calendar')
     .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('id', before.id)
+    .eq('company_id', before.company_id)
 
   if (error) return { error: error.message }
 
@@ -31,7 +31,7 @@ export async function updateBusinessCalendar(fields) {
     actor,
     action: 'settings.update',
     tableName: 'business_calendar',
-    rowId: before.id,
+    rowId: before.company_id,
     before: Object.fromEntries(changedKeys.map(k => [k, before[k]])),
     after: Object.fromEntries(changedKeys.map(k => [k, fields[k]])),
     note: changedKeys.map(k => `${k}: ${JSON.stringify(before[k])} → ${JSON.stringify(fields[k])}`).join('; '),
