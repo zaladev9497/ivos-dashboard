@@ -13,10 +13,12 @@ import {
   getLeadGlasshousePromotion,
   getLeadNcOrders,
   getTemplates,
+  getBusinessCalendar,
 } from '@/lib/queries'
 import LeadSidebar from './LeadSidebar'
 import Timeline from './Timeline'
 import LeadActions from './LeadActions'
+import AdvanceButton from '@/components/AdvanceButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,6 +47,7 @@ export default async function LeadDetailPage({ params }) {
     ghPromotion,
     ncOrders,
     allTemplates,
+    calendar,
   ] = await Promise.all([
     safe(getLeadJourneys(id), []),
     safe(getLeadMessages(id), []),
@@ -57,7 +60,11 @@ export default async function LeadDetailPage({ params }) {
     safe(getLeadGlasshousePromotion(id), null),
     safe(getLeadNcOrders(id), []),
     safe(getTemplates(), []),
+    safe(getBusinessCalendar(), null),
   ])
+
+  const demoMode = !!(calendar?.demo_mode)
+  const demoPollInterval = calendar?.demo_poll_interval_seconds ?? 10
 
   const templateLabels = {}
   for (const t of allTemplates) templateLabels[t.template_key] = t
@@ -70,6 +77,8 @@ export default async function LeadDetailPage({ params }) {
         <span>/</span>
         <span className="text-slate-800 font-medium">{lead.full_name || lead.id}</span>
       </div>
+
+      {demoMode && <AdvanceButton pollIntervalSeconds={demoPollInterval} />}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
         {/* Timeline */}

@@ -6,9 +6,10 @@ import Badge from '@/components/Badge'
 import Timestamp from '@/components/Timestamp'
 import Pagination from '@/components/Pagination'
 import EmptyState from '@/components/EmptyState'
+import AdvanceButton from '@/components/AdvanceButton'
 import { formatDayFull, relativeTime } from '@/lib/utils'
 
-export default function MessagesView({ tab, sentResult, scheduledResult, page, filters, fetchError }) {
+export default function MessagesView({ tab, sentResult, scheduledResult, page, filters, fetchError, demoMode, demoPollInterval }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [localFilters, setLocalFilters] = useState(filters)
@@ -145,6 +146,8 @@ export default function MessagesView({ tab, sentResult, scheduledResult, page, f
           Show test
         </label>
       </div>
+
+      {!isSent && demoMode && <AdvanceButton pollIntervalSeconds={demoPollInterval} />}
 
       {fetchError && (
         <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
