@@ -6,6 +6,7 @@ import Badge from '@/components/Badge'
 import Timestamp from '@/components/Timestamp'
 import Pagination from '@/components/Pagination'
 import EmptyState from '@/components/EmptyState'
+import { formatDayFull, relativeTime } from '@/lib/utils'
 
 export default function MessagesView({ tab, sentResult, scheduledResult, page, filters, fetchError }) {
   const router = useRouter()
@@ -236,7 +237,16 @@ export default function MessagesView({ tab, sentResult, scheduledResult, page, f
                     {m.suppression_reason || m.error_message || '—'}
                   </td>
                   <td className="px-4 py-2.5">
-                    <Timestamp iso={m.scheduled_for} />
+                    {m.context?.demo ? (
+                      <div className="leading-tight">
+                        <span className="block text-xs text-violet-600 font-medium">{relativeTime(m.scheduled_for)}</span>
+                        {m.context.production_due && (
+                          <span className="block text-[10px] text-slate-400">Prod: {formatDayFull(m.context.production_due)}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <Timestamp iso={m.scheduled_for} />
+                    )}
                   </td>
                 </tr>
               ))}

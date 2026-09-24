@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Badge from '@/components/Badge'
-import { formatDate, formatTime, relativeTime } from '@/lib/utils'
+import { formatDate, formatTime, formatDayFull, relativeTime } from '@/lib/utils'
 
 function Chevron({ open }) {
   return (
@@ -173,7 +173,14 @@ export default function TimelineEntry({ item, showDate = false }) {
           {/* Timestamp + expand button */}
           <div className="flex items-start gap-1.5 shrink-0">
             <time dateTime={item.ts} className="text-right leading-tight">
-              {showDate ? (
+              {item.demoMode ? (
+                <>
+                  <span className="block text-xs text-violet-600 font-medium">{relativeTime(item.ts)}</span>
+                  {item.productionDue && (
+                    <span className="block text-[10px] text-slate-400">Prod: {formatDayFull(item.productionDue)}</span>
+                  )}
+                </>
+              ) : showDate ? (
                 <>
                   <span className="block text-xs text-slate-500">{formatDate(item.ts)}</span>
                   <span className="block text-xs text-slate-400">{relativeTime(item.ts)}</span>

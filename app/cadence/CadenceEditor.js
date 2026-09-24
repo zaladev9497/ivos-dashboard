@@ -36,10 +36,12 @@ function smsCollisions(steps) {
   return collisions
 }
 
-function StepRow({ step, quoteValidityDays, collision, onSaved }) {
+function StepRow({ step, quoteValidityDays, collision, onSaved, demoMode }) {
   const [editing, setEditing] = useState(false)
   const [offsetValue, setOffsetValue] = useState(Number(step.offset_value))
   const [offsetUnit, setOffsetUnit] = useState(step.offset_unit)
+  const [demoOffsetValue, setDemoOffsetValue] = useState(Number(step.demo_offset_value ?? step.offset_value))
+  const [demoOffsetUnit, setDemoOffsetUnit] = useState(step.demo_offset_unit ?? step.offset_unit)
   const [enabled, setEnabled] = useState(step.enabled)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -49,7 +51,7 @@ function StepRow({ step, quoteValidityDays, collision, onSaved }) {
 
   async function handleSave() {
     setSaving(true); setError(null)
-    const res = await updateCadenceStep({ id: step.id, offsetValue, offsetUnit, enabled })
+    const res = await updateCadenceStep({ id: step.id, offsetValue, offsetUnit, enabled, demoOffsetValue, demoOffsetUnit })
     setSaving(false)
     if (res.error) { setError(res.error); return }
     setEditing(false)
@@ -59,6 +61,8 @@ function StepRow({ step, quoteValidityDays, collision, onSaved }) {
   function handleCancel() {
     setOffsetValue(Number(step.offset_value))
     setOffsetUnit(step.offset_unit)
+    setDemoOffsetValue(Number(step.demo_offset_value ?? step.offset_value))
+    setDemoOffsetUnit(step.demo_offset_unit ?? step.offset_unit)
     setEnabled(step.enabled)
     setEditing(false)
     setError(null)
@@ -89,7 +93,7 @@ function StepRow({ step, quoteValidityDays, collision, onSaved }) {
           <span className="text-xs text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{step.track}</span>
         )}
 
-        {/* Offset */}
+        {/* Production offset */}
         {editing ? (
           <div className="flex items-center gap-1.5">
             <input
@@ -113,6 +117,33 @@ function StepRow({ step, quoteValidityDays, collision, onSaved }) {
             {offsetLabel(step.offset_value, step.offset_unit)}
             {step.offset_from !== 'base' && <span className="text-slate-400 ml-1">from {step.offset_from}</span>}
           </button>
+        )}
+
+        {/* Demo offset — only shown when demo mode is on */}
+        {demoMode && (
+          editing ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-violet-600 font-medium">Demo:</span>
+              <input
+                type="number"
+                min="0"
+                value={demoOffsetValue}
+                onChange={e => setDemoOffsetValue(parseInt(e.target.value, 10) || 0)}
+                className="w-16 rounded border border-violet-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-violet-400"
+              />
+              <select
+                value={demoOffsetUnit}
+                onChange={e => setDemoOffsetUnit(e.target.value)}
+                className="rounded border border-violet-300 px-2 py-1 text-xs focus:outline-none"
+              >
+                {UNITS.map(u => <option key={u} value={u}>{UNIT_LABELS[u]}</option>)}
+              </select>
+            </div>
+          ) : (
+            <button onClick={() => setEditing(true)} className="text-xs text-violet-600 font-mono bg-violet-50 rounded px-2 py-1">
+              {offsetLabel(step.demo_offset_value ?? step.offset_value, step.demo_offset_unit ?? step.offset_unit)} demo
+            </button>
+          )
         )}
 
         {/* Actions */}
@@ -165,7 +196,7 @@ function TimelinePreview({ steps }) {
   )
 }
 
-export default function CadenceEditor({ steps, journeyType, journeys, journeyCounts, quoteValidityDays }) {
+export default function CadenceEditor({ steps, journeyType, journeys, journeyCounts, quoteValidityDays, demoMode }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [localSteps, setLocalSteps] = useState(steps)
@@ -222,6 +253,7 @@ export default function CadenceEditor({ steps, journeyType, journeys, journeyCou
                   quoteValidityDays={quoteValidityDays}
                   collision={collisions.has(colKey)}
                   onSaved={() => router.refresh()}
+                  demoMode={demoMode}
                 />
               )
             })}

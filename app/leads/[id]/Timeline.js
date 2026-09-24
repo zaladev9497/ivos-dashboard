@@ -214,13 +214,17 @@ function buildTimeline({
     const body = mergedMsg?.body ?? ''
 
     if (upcomingStates.has(sm.state)) {
+      const isDemo = sm.context?.demo === true
+      const productionDue = sm.context?.production_due ?? null
       items.push({
         id: `sched-${sm.id}`, ts: sm.scheduled_for, upcoming: true,
         type: 'scheduled_upcoming', rawKey: sm.template_key,
-        icon: '◷', iconColor: 'text-blue-400',
+        icon: '◷', iconColor: isDemo ? 'text-violet-400' : 'text-blue-400',
         title,
         summary: sm.channel === 'sms' ? 'Scheduled SMS' : `Scheduled ${sm.channel}`,
         status: sm.state,
+        demoMode: isDemo,
+        productionDue,
       })
       continue
     }

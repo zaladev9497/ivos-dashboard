@@ -4,17 +4,21 @@ import { requireActor } from '@/lib/auth'
 import { createServerClient } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
 
-export async function updateCadenceStep({ id, offsetValue, offsetUnit, enabled }) {
+export async function updateCadenceStep({ id, offsetValue, offsetUnit, enabled, demoOffsetValue, demoOffsetUnit }) {
   const actor = await requireActor()
   if (offsetValue < 0) return { error: 'Offset cannot be negative.' }
 
   const sb = createServerClient()
   const { data: before } = await sb.from('cadence_steps').select('*').eq('id', id).maybeSingle()
 
-  const { error } = await sb
-    .from('cadence_steps')
-    .update({ offset_value: offsetValue, offset_unit: offsetUnit, enabled, updated_by: actor, updated_at: new Date().toISOString() })
-    .eq('id', id)
+  const patch = {
+    offset_value: offsetValue, offset_unit: offsetUnit, enabled,
+    updated_by: actor, updated_at: new Date().toISOString(),
+  }
+  if (demoOffsetValue !== undefined) patch.demo_offset_value = demoOffsetValue
+  if (demoOffsetUnit !== undefined) patch.demo_offset_unit = demoOffsetUnit
+
+  const { error } = await sb.from('cadence_steps').update(patch).eq('id', id)
   if (error) return { error: error.message }
 
   await logAudit({ actor, action: 'cadence.update', tableName: 'cadence_steps', rowId: id,

@@ -22,6 +22,7 @@ export default async function CadencePage({ searchParams }) {
       journeys={JOURNEYS}
       journeyCounts={journeyCounts}
       quoteValidityDays={calendar?.quote_validity_days ?? 30}
+      demoMode={!!(calendar?.demo_mode)}
     />
   )
 }

@@ -13,7 +13,7 @@ const links = [
   { href: '/settings', label: 'Settings' },
 ]
 
-export default function Nav({ testMode }) {
+export default function Nav({ testMode, demoMode }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -26,9 +26,16 @@ export default function Nav({ testMode }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
-      {testMode && (
-        <div className="bg-amber-400 text-amber-900 text-center text-xs font-semibold py-1 px-4">
-          TEST MODE — all SMS are redirected, no real customers are receiving messages
+      {(testMode || demoMode) && (
+        <div className={`text-center text-xs font-semibold py-1 px-4 ${
+          testMode && demoMode
+            ? 'bg-violet-600 text-white'
+            : 'bg-amber-400 text-amber-900'
+        }`}>
+          {testMode && demoMode
+            ? 'TEST MODE + DEMO MODE — follow-up timings are compressed to minutes'
+            : 'TEST MODE — all SMS are redirected, no real customers are receiving messages'
+          }
         </div>
       )}
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2">

@@ -32,6 +32,7 @@ export default function SettingsForm({ calendar }) {
   // Dangerous fields — local staging state
   const [smsRedirectTo, setSmsRedirectTo] = useState(calendar?.sms_redirect_to ?? '')
   const [testOnly, setTestOnly] = useState(calendar?.test_only ?? false)
+  const [demoMode, setDemoMode] = useState(calendar?.demo_mode ?? false)
 
   const [saving, setSaving] = useState(false)
   const [result, setResult] = useState(null)
@@ -55,6 +56,7 @@ export default function SettingsForm({ calendar }) {
       // Sync local state with what was saved
       if ('test_only' in fields) setTestOnly(fields.test_only)
       if ('sms_redirect_to' in fields) setSmsRedirectTo(fields.sms_redirect_to)
+      if ('demo_mode' in fields) setDemoMode(fields.demo_mode)
     }
   }
 
@@ -121,6 +123,22 @@ export default function SettingsForm({ calendar }) {
       setTestOnly(true)
     } else {
       doSave({ test_only: checked })
+    }
+  }
+
+  function handleDemoModeChange(checked) {
+    if (checked && !testOnly) return // guard: test_only must be on
+    if (!checked && calendar?.demo_mode) {
+      setConfirm({
+        fields: { demo_mode: false },
+        title: 'Disable demo mode',
+        danger: false,
+        message: <p>Demo mode will be turned off. Follow-up timings will return to normal cadence.</p>,
+        confirmLabel: 'Disable demo mode',
+      })
+      setDemoMode(true) // hold toggle until confirmed
+    } else {
+      doSave({ demo_mode: checked })
     }
   }
 
@@ -287,6 +305,33 @@ export default function SettingsForm({ calendar }) {
               </span>
             </div>
           </Field>
+
+          <Field
+            label="Demo mode"
+            hint="Compresses follow-up timings to minutes for sales demos. Requires test-only mode."
+          >
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleDemoModeChange(!demoMode)}
+                disabled={saving || (!testOnly && !demoMode)}
+                className={`w-10 h-5 rounded-full transition-colors disabled:opacity-40 ${demoMode ? 'bg-violet-600' : 'bg-slate-300'}`}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white shadow mx-0.5 transition-transform ${demoMode ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+              <span className="text-sm text-slate-600">
+                {demoMode ? 'Demo mode ON — timings compressed to minutes' : 'Demo mode OFF'}
+              </span>
+              {!testOnly && !demoMode && (
+                <span className="text-xs text-slate-400">Enable test-only mode first</span>
+              )}
+            </div>
+            {demoMode && (
+              <p className="mt-2 text-xs text-slate-400">
+                The follow-up poller must run at least once a minute for demo mode to feel live.
+              </p>
+            )}
+          </Field>
         </div>
       </div>
 
@@ -306,6 +351,7 @@ export default function SettingsForm({ calendar }) {
           // Reset local state to match current saved state
           setSmsRedirectTo(calendar?.sms_redirect_to ?? '')
           setTestOnly(calendar?.test_only ?? false)
+          setDemoMode(calendar?.demo_mode ?? false)
           setConfirm(null)
         }}
       />
