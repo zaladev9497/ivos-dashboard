@@ -8,7 +8,7 @@ export default async function LeadsPage({ searchParams }) {
   const page = parseInt(params?.page ?? '1', 10)
   const search = params?.search ?? ''
   const journeyType = params?.journey_type ?? ''
-  const showTest = params?.show_test === '1'
+  const showTest = params?.show_test !== '0'
   const hasException = params?.has_exception === '1'
   const dateFrom = params?.date_from ?? ''
   const dateTo = params?.date_to ?? ''

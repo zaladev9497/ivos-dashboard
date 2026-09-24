@@ -31,7 +31,7 @@ export default function LeadsTable({
     const s = { search, journeyType, showTest, hasException, dateFrom, dateTo, page: currentPage, ...overrides }
     if (s.search) p.set('search', s.search)
     if (s.journeyType) p.set('journey_type', s.journeyType)
-    if (s.showTest) p.set('show_test', '1')
+    if (!s.showTest) p.set('show_test', '0')
     if (s.hasException) p.set('has_exception', '1')
     if (s.dateFrom) p.set('date_from', s.dateFrom)
     if (s.dateTo) p.set('date_to', s.dateTo)
