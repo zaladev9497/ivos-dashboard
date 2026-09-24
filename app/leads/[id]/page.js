@@ -29,6 +29,8 @@ export default async function LeadDetailPage({ params }) {
   }
   if (!lead) notFound()
 
+  const safe = (p, fallback) => p.catch(() => fallback)
+
   const [
     journeys,
     messages,
@@ -41,16 +43,16 @@ export default async function LeadDetailPage({ params }) {
     ghPromotion,
     ncOrders,
   ] = await Promise.all([
-    getLeadJourneys(id),
-    getLeadMessages(id),
-    getLeadScheduledMessages(id),
-    getLeadJourneyEvents(id),
-    getLeadEvents(id),
-    getLeadExceptions(id),
-    getLeadConversation(id),
-    getLeadGlasshouseEvents(id),
-    getLeadGlasshousePromotion(id),
-    getLeadNcOrders(id),
+    safe(getLeadJourneys(id), []),
+    safe(getLeadMessages(id), []),
+    safe(getLeadScheduledMessages(id), []),
+    safe(getLeadJourneyEvents(id), []),
+    safe(getLeadEvents(id), []),
+    safe(getLeadExceptions(id), []),
+    safe(getLeadConversation(id), []),
+    safe(getLeadGlasshouseEvents(id), []),
+    safe(getLeadGlasshousePromotion(id), null),
+    safe(getLeadNcOrders(id), []),
   ])
 
   return (
