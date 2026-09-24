@@ -191,12 +191,9 @@ function TimelineEntry({ item }) {
               <span className="text-xs text-slate-400 font-mono">{item.source}</span>
             )}
           </div>
-          <time
-            dateTime={item.ts}
-            title={formatDate(item.ts)}
-            className="flex-shrink-0 text-xs text-slate-400 cursor-default"
-          >
-            {relativeTime(item.ts)}
+          <time dateTime={item.ts} className="shrink-0 text-right leading-tight">
+            <span className="block text-xs text-slate-500">{formatDate(item.ts)}</span>
+            <span className="block text-xs text-slate-400">{relativeTime(item.ts)}</span>
           </time>
         </div>
 
