@@ -24,7 +24,7 @@ export default async function RootLayout({ children }) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full bg-slate-50 text-slate-900">
         <Nav testMode={testMode} />
-        <main className="mx-auto max-w-screen-xl px-4 py-6">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
       </body>
     </html>
   )

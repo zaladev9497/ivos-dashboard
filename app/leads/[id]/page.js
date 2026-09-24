@@ -15,6 +15,7 @@ import {
 } from '@/lib/queries'
 import LeadSidebar from './LeadSidebar'
 import Timeline from './Timeline'
+import LeadActions from './LeadActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,13 +81,21 @@ export default async function LeadDetailPage({ params }) {
         />
 
         {/* Sidebar */}
-        <LeadSidebar
-          lead={lead}
-          journeys={journeys}
-          conversations={conversations}
-          exceptions={exceptions}
-          ncOrders={ncOrders}
-        />
+        <div className="space-y-4">
+          <LeadActions
+            journeys={journeys}
+            scheduledMessages={scheduledMessages}
+            conversations={conversations}
+            leadId={id}
+          />
+          <LeadSidebar
+            lead={lead}
+            journeys={journeys}
+            conversations={conversations}
+            exceptions={exceptions}
+            ncOrders={ncOrders}
+          />
+        </div>
       </div>
     </div>
   )

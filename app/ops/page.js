@@ -9,6 +9,8 @@ import Link from 'next/link'
 import Badge from '@/components/Badge'
 import Timestamp from '@/components/Timestamp'
 import EmptyState from '@/components/EmptyState'
+import ExceptionActions from './ExceptionActions'
+import RetryButton from './RetryButton'
 import { formatDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -93,6 +95,7 @@ export default async function OpsPage({ searchParams }) {
                 <th className="px-4 py-2 text-left">State</th>
                 <th className="px-4 py-2 text-left">First seen</th>
                 <th className="px-4 py-2 text-left">Seen</th>
+                <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -119,6 +122,9 @@ export default async function OpsPage({ searchParams }) {
                     <Timestamp iso={exc.first_seen_at} />
                   </td>
                   <td className="px-4 py-2.5 text-slate-500 text-xs">{exc.seen_count}×</td>
+                  <td className="px-4 py-2.5">
+                    <ExceptionActions id={exc.id} state={exc.state} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -141,6 +147,7 @@ export default async function OpsPage({ searchParams }) {
                 <th className="px-4 py-2 text-left">Error</th>
                 <th className="px-4 py-2 text-left">Attempts</th>
                 <th className="px-4 py-2 text-left">Last attempt</th>
+                <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -163,6 +170,9 @@ export default async function OpsPage({ searchParams }) {
                   <td className="px-4 py-2.5 text-slate-500 text-xs">{m.attempts}</td>
                   <td className="px-4 py-2.5">
                     <Timestamp iso={m.last_attempt_at} />
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <RetryButton id={m.id} />
                   </td>
                 </tr>
               ))}
