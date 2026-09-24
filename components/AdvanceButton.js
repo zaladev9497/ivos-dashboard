@@ -34,6 +34,8 @@ export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
       const result = await triggerDemoAdvance()
       if (result?.error) { setError(result.error); return }
       setCount(prev => { const next = prev + 1; writeCount(next); return next })
+      // Give n8n ~2.5s to process and write back to the DB before we re-fetch
+      await new Promise(r => setTimeout(r, 2500))
       router.refresh()
     } catch (e) {
       setError(e?.message ?? 'Unexpected error')
