@@ -103,6 +103,7 @@ export default async function LeadDetailPage({ params }) {
             scheduledMessages={scheduledMessages}
             conversations={conversations}
             leadId={id}
+            demoMode={demoMode}
           />
           <LeadSidebar
             lead={lead}

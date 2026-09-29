@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import { pauseJourney, resumeJourney, cancelScheduledMessage, handBackToBot } from './actions'
+import { pauseJourney, resumeJourney, cancelScheduledMessage, handBackToBot, sendMessageNow } from './actions'
 import { formatDate } from '@/lib/utils'
 
 function ActionResult({ result }) {
@@ -107,12 +107,21 @@ function JourneyActions({ journey }) {
 }
 
 // ─── Cancel scheduled message ──────────────────────────────────────────────────
-function CancelMessageRow({ msg }) {
+function CancelMessageRow({ msg, demoMode }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [sending, setSending] = useState(false)
   const [result, setResult] = useState(null)
+
+  async function handleSendNow() {
+    setSending(true); setResult(null)
+    const res = await sendMessageNow({ messageId: msg.id })
+    setResult(res)
+    if (res.ok) { await new Promise(r => setTimeout(r, 2500)); router.refresh() }
+    setSending(false)
+  }
 
   async function handleCancel() {
     setSaving(true); setResult(null)
@@ -127,6 +136,15 @@ function CancelMessageRow({ msg }) {
         <span className="font-mono text-xs text-slate-600">{msg.template_key}</span>
         <span className="text-xs text-slate-400">{msg.channel}</span>
         <span className="text-xs text-slate-400">→ {formatDate(msg.scheduled_for)}</span>
+        {demoMode && (
+          <button
+            onClick={handleSendNow}
+            disabled={sending}
+            className="rounded bg-violet-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-40"
+          >
+            {sending ? 'Sending…' : 'Send now'}
+          </button>
+        )}
         <button
           onClick={() => setOpen(v => !v)}
           className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
@@ -204,7 +222,7 @@ function HandBackRow({ conv, leadId }) {
 }
 
 // ─── Main panel ────────────────────────────────────────────────────────────────
-export default function LeadActions({ journeys, scheduledMessages, conversations, leadId }) {
+export default function LeadActions({ journeys, scheduledMessages, conversations, leadId, demoMode }) {
   const pendingMessages = (scheduledMessages ?? []).filter(m => m.state === 'pending')
   const takeoverConvs = (conversations ?? []).filter(c => c.human_state === 'human_takeover')
   const actionableJourneys = (journeys ?? []).filter(j => j.state === 'active' || j.state === 'paused')
@@ -226,7 +244,7 @@ export default function LeadActions({ journeys, scheduledMessages, conversations
         {pendingMessages.length > 0 && (
           <div className="space-y-2 pt-3">
             <p className="text-xs font-medium text-slate-500">Pending messages</p>
-            {pendingMessages.map(m => <CancelMessageRow key={m.id} msg={m} />)}
+            {pendingMessages.map(m => <CancelMessageRow key={m.id} msg={m} demoMode={demoMode} />)}
           </div>
         )}
         {takeoverConvs.length > 0 && (

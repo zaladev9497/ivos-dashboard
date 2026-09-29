@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { requireActor } from '@/lib/auth'
 import { createServerClient } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
+import { triggerDemoAdvance } from '@/app/demo-actions'
 
 export async function pauseJourney({ journeyId, reason, pausedUntil }) {
   const actor = await requireActor()
@@ -105,5 +106,38 @@ export async function handBackToBot({ conversationId, leadId }) {
   })
 
   revalidatePath(`/leads/${leadId}`)
+  return { ok: true }
+}
+
+// Demo/testing: make a pending message due right now and fire the n8n poller.
+export async function sendMessageNow({ messageId }) {
+  const actor = await requireActor()
+  const sb = createServerClient()
+
+  const { data: before } = await sb
+    .from('scheduled_messages')
+    .select('state, lead_id, template_key, scheduled_for')
+    .eq('id', messageId)
+    .maybeSingle()
+
+  if (!before) return { error: 'Scheduled message not found.' }
+  if (before.state !== 'pending') return { error: `Cannot send a message in state: ${before.state}` }
+
+  const now = new Date().toISOString()
+  const { error } = await sb.from('scheduled_messages').update({
+    scheduled_for: now, updated_at: now,
+  }).eq('id', messageId)
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actor, action: 'scheduled_message.send_now', tableName: 'scheduled_messages', rowId: messageId,
+    before: { scheduled_for: before.scheduled_for }, after: { scheduled_for: now },
+    note: `Send-now (demo) for ${before.template_key}`,
+  })
+
+  const trig = await triggerDemoAdvance()
+  if (trig?.error) return { error: `Message marked due, but poller trigger failed: ${trig.error}` }
+
+  revalidatePath(`/leads/${before.lead_id}`)
   return { ok: true }
 }
