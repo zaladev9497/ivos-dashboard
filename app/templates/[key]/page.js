@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getTemplate, getTemplateHistory, getAuditLogs } from '@/lib/queries'
 import TemplateEditor from './TemplateEditor'
+import { templateLabel } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,11 +24,11 @@ export default async function TemplatePage({ params }) {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1.5">
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <Link href="/templates" className="hover:text-slate-800">Templates</Link>
         <span>/</span>
-        <span className="font-mono text-slate-800">{templateKey}</span>
+        <span className="font-medium text-slate-800" title={templateKey}>{templateLabel(templateKey)}</span>
       </div>
       <TemplateEditor template={template} history={history} auditLogs={auditLogs} />
     </div>

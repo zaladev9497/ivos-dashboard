@@ -28,11 +28,10 @@ export default async function PipelinePage() {
   const byType = groupBy(journeys, 'journey_type')
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-slate-800">Pipeline</h1>
+    <div className="space-y-1.5">
 
       {fetchError && (
-        <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
           {fetchError}
         </div>
       )}
@@ -48,24 +47,24 @@ export default async function PipelinePage() {
         const byStage = groupBy(typeJourneys, 'current_stage')
 
         return (
-          <div key={type} className="space-y-3">
+          <div key={type} className="space-y-1.5">
             <h2 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
               {journeyTypeLabel(type)} ({typeJourneys.length})
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5">
               {Object.entries(byStage).map(([stage, stageJourneys]) => {
                 const avgAge = stageJourneys.reduce((sum, j) => sum + (ageInDays(j.started_at) ?? 0), 0) / stageJourneys.length
 
                 return (
-                  <div key={stage} className="rounded-lg border border-slate-200 bg-white shadow-sm p-3">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={stage} className="rounded-md border border-slate-200 bg-white p-3">
+                    <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-semibold text-slate-600 truncate" title={stage}>
                         {stage ?? 'No stage'}
                       </span>
                       <span className="text-xs font-bold text-slate-800 ml-1">{stageJourneys.length}</span>
                     </div>
-                    <p className="text-xs text-slate-400 mb-2">avg {Math.round(avgAge)}d</p>
+                    <p className="text-xs text-slate-400 mb-1">avg {Math.round(avgAge)}d</p>
                     <ul className="space-y-1 max-h-40 overflow-y-auto">
                       {stageJourneys.map((j) => (
                         <li key={j.id}>

@@ -13,9 +13,9 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className="space-y-1.5 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-800">Settings</h1>
+        <span className="text-[13px] font-medium text-slate-800">Settings</span>
         {calendar?.updated_at && (
           <span className="text-xs text-slate-400">
             Last updated {formatDate(calendar.updated_at)}
@@ -24,7 +24,7 @@ export default async function SettingsPage() {
       </div>
 
       {!calendar && (
-        <div className="rounded bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+        <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
           Could not load business calendar. Check that <code className="font-mono">SUPABASE_URL</code> and <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> are set.
         </div>
       )}

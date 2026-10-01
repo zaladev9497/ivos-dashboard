@@ -90,7 +90,7 @@ function renderPayload(rawKey, payload) {
   const keys = Object.keys(payload)
   if (!keys.length) return null
   return (
-    <pre className="mt-2 rounded bg-slate-900 text-slate-100 text-xs px-3 py-2 overflow-x-auto whitespace-pre-wrap wrap-break-word">
+    <pre className="mt-2 rounded bg-slate-900 text-slate-100 dark:bg-black dark:text-slate-200 text-xs px-3 py-2 overflow-x-auto whitespace-pre-wrap wrap-break-word">
       {JSON.stringify(payload, null, 2)}
     </pre>
   )

@@ -2,28 +2,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { triggerDemoAdvance } from '@/app/demo-actions'
+import { createStorageStore } from '@/lib/client-store'
 
 const WARN_AT = 50
 const AUTO_STOP_MS = 15 * 60 * 1000
 
-function readCount() {
-  try { return parseInt(sessionStorage.getItem('demo_advance_count') || '0', 10) } catch { return 0 }
-}
-function writeCount(n) {
-  try { sessionStorage.setItem('demo_advance_count', String(n)) } catch {}
-}
+const countStore = createStorageStore(() => sessionStorage, 'demo_advance_count', {
+  serverValue: 0,
+  read: (v) => parseInt(v || '0', 10) || 0,
+})
 
 export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
   const router = useRouter()
   const inflightRef = useRef(false)
   const [running, setRunning] = useState(false)
   const [autoMode, setAutoMode] = useState(false)
-  const [count, setCount] = useState(0)
+  const count = countStore.use()
   const [error, setError] = useState(null)
   const autoRef = useRef(null)
   const autoStartRef = useRef(null)
-
-  useEffect(() => { setCount(readCount()) }, [])
 
   async function advance() {
     if (inflightRef.current) return
@@ -33,7 +30,7 @@ export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
     try {
       const result = await triggerDemoAdvance()
       if (result?.error) { setError(result.error); return }
-      setCount(prev => { const next = prev + 1; writeCount(next); return next })
+      countStore.set(count + 1)
       // Give n8n ~2.5s to process and write back to the DB before we re-fetch
       await new Promise(r => setTimeout(r, 2500))
       router.refresh()
@@ -65,7 +62,7 @@ export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
   }, [autoMode, pollIntervalSeconds])
 
   return (
-    <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 space-y-2">
+    <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 space-y-2">
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide shrink-0">Demo</span>
 

@@ -11,13 +11,13 @@ import Timestamp from '@/components/Timestamp'
 import EmptyState from '@/components/EmptyState'
 import ExceptionActions from './ExceptionActions'
 import RetryButton from './RetryButton'
-import { formatDate } from '@/lib/utils'
+import { formatDate, templateLabel } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 function SectionHeader({ title, count }) {
   return (
-    <div className="border-b border-slate-100 px-4 py-2.5 flex items-center justify-between">
+    <div className="border-b border-slate-100 px-3 py-1.5 flex items-center justify-between">
       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{title}</span>
       {count != null && (
         <span className="text-xs font-bold text-slate-700">{count}</span>
@@ -49,18 +49,17 @@ export default async function OpsPage({ searchParams }) {
   const isTestMode = !!(calendar?.sms_redirect_to || calendar?.test_only)
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-slate-800">Operations</h1>
+    <div className="space-y-1.5">
 
       {fetchError && (
-        <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
           {fetchError}
         </div>
       )}
 
       {/* Test mode banner */}
       {isTestMode && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           <strong>Test mode is active.</strong>
           {calendar.sms_redirect_to && (
             <> All SMS redirected to <code className="font-mono">{calendar.sms_redirect_to}</code>.</>
@@ -70,59 +69,59 @@ export default async function OpsPage({ searchParams }) {
       )}
 
       {/* Exception stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-1.5">
         {[['high', stats.high], ['medium', stats.medium], ['low', stats.low]].map(([sev, count]) => (
-          <div key={sev} className="rounded-lg border border-slate-200 bg-white shadow-sm px-4 py-3 text-center">
-            <div className="text-2xl font-bold text-slate-800">{count}</div>
+          <div key={sev} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-center">
+            <div className="text-lg font-bold leading-none text-slate-800">{count}</div>
             <Badge label={sev} status={sev} className="mt-1" />
           </div>
         ))}
       </div>
 
       {/* Open exceptions */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
         <SectionHeader title="Open exceptions" count={exceptions.length} />
         {exceptions.length === 0 ? (
           <EmptyState title="No open exceptions" description="Everything looks clean." />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <table className="w-full text-[13px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 shadow-[inset_0_-1px_0] shadow-slate-200">
               <tr>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Lead</th>
-                <th className="px-4 py-2 text-left">Severity</th>
-                <th className="px-4 py-2 text-left">Summary</th>
-                <th className="px-4 py-2 text-left">State</th>
-                <th className="px-4 py-2 text-left">First seen</th>
-                <th className="px-4 py-2 text-left">Seen</th>
-                <th className="px-4 py-2 text-left">Actions</th>
+                <th className="px-3 py-1.5 text-left font-medium">Type</th>
+                <th className="px-3 py-1.5 text-left font-medium">Lead</th>
+                <th className="px-3 py-1.5 text-left font-medium">Severity</th>
+                <th className="px-3 py-1.5 text-left font-medium">Summary</th>
+                <th className="px-3 py-1.5 text-left font-medium">State</th>
+                <th className="px-3 py-1.5 text-left font-medium">First seen</th>
+                <th className="px-3 py-1.5 text-left font-medium">Seen</th>
+                <th className="px-3 py-1.5 text-left font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {exceptions.map((exc) => (
                 <tr key={exc.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{exc.exception_type}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 font-mono text-xs text-slate-600">{exc.exception_type}</td>
+                  <td className="px-3 py-1.5">
                     {exc.lead_id ? (
                       <Link href={`/leads/${exc.lead_id}`} className="text-blue-600 hover:underline text-xs">
                         {exc.lead_id}
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5">
                     <Badge label={exc.severity} status={exc.severity} />
                   </td>
-                  <td className="px-4 py-2.5 text-slate-600 text-xs max-w-sm">
+                  <td className="px-3 py-1.5 text-slate-600 text-xs max-w-sm">
                     <p className="truncate" title={exc.summary}>{exc.summary}</p>
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5">
                     <Badge label={exc.state} status={exc.state === 'acknowledged' ? 'medium' : 'failed'} />
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5">
                     <Timestamp iso={exc.first_seen_at} />
                   </td>
-                  <td className="px-4 py-2.5 text-slate-500 text-xs">{exc.seen_count}×</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 text-slate-500 text-xs">{exc.seen_count}×</td>
+                  <td className="px-3 py-1.5">
                     <ExceptionActions id={exc.id} state={exc.state} />
                   </td>
                 </tr>
@@ -133,45 +132,45 @@ export default async function OpsPage({ searchParams }) {
       </div>
 
       {/* Failed scheduled messages */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
         <SectionHeader title="Failed scheduled messages" count={failedScheduled.length} />
         {failedScheduled.length === 0 ? (
           <EmptyState title="No failed messages" description="All scheduled messages are healthy." />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <table className="w-full text-[13px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 shadow-[inset_0_-1px_0] shadow-slate-200">
               <tr>
-                <th className="px-4 py-2 text-left">Lead</th>
-                <th className="px-4 py-2 text-left">Template</th>
-                <th className="px-4 py-2 text-left">Channel</th>
-                <th className="px-4 py-2 text-left">Error</th>
-                <th className="px-4 py-2 text-left">Attempts</th>
-                <th className="px-4 py-2 text-left">Last attempt</th>
-                <th className="px-4 py-2 text-left">Actions</th>
+                <th className="px-3 py-1.5 text-left font-medium">Lead</th>
+                <th className="px-3 py-1.5 text-left font-medium">Template</th>
+                <th className="px-3 py-1.5 text-left font-medium">Channel</th>
+                <th className="px-3 py-1.5 text-left font-medium">Error</th>
+                <th className="px-3 py-1.5 text-left font-medium">Attempts</th>
+                <th className="px-3 py-1.5 text-left font-medium">Last attempt</th>
+                <th className="px-3 py-1.5 text-left font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {failedScheduled.map((m) => (
                 <tr key={m.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5">
                     {m.lead_id ? (
                       <Link href={`/leads/${m.lead_id}`} className="text-blue-600 hover:underline">
                         {m.leads?.full_name || m.lead_id}
                       </Link>
                     ) : '—'}
                   </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{m.template_key}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 text-xs text-slate-700" title={m.template_key}>{templateLabel(m.template_key)}</td>
+                  <td className="px-3 py-1.5">
                     <Badge label={m.channel} status={m.channel} />
                   </td>
-                  <td className="px-4 py-2.5 text-xs text-red-600 max-w-xs">
+                  <td className="px-3 py-1.5 text-xs text-red-600 max-w-xs">
                     <p className="truncate" title={m.error_message}>{m.error_message || '—'}</p>
                   </td>
-                  <td className="px-4 py-2.5 text-slate-500 text-xs">{m.attempts}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 text-slate-500 text-xs">{m.attempts}</td>
+                  <td className="px-3 py-1.5">
                     <Timestamp iso={m.last_attempt_at} />
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5">
                     <RetryButton id={m.id} />
                   </td>
                 </tr>
@@ -183,9 +182,9 @@ export default async function OpsPage({ searchParams }) {
 
       {/* Business calendar */}
       {calendar && (
-        <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
           <SectionHeader title="Business calendar" />
-          <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <div className="px-3 py-2 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             <div>
               <dt className="text-xs text-slate-400">Timezone</dt>
               <dd className="text-slate-800">{calendar.timezone}</dd>
@@ -215,31 +214,31 @@ export default async function OpsPage({ searchParams }) {
       )}
 
       {/* Daily reports */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
         <SectionHeader title="Daily reports" count={reportsResult.total} />
         {reportsResult.reports.length === 0 ? (
           <EmptyState title="No reports yet" description="Daily reports appear here once they're generated." />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <table className="w-full text-[13px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 shadow-[inset_0_-1px_0] shadow-slate-200">
               <tr>
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Items</th>
-                <th className="px-4 py-2 text-left">Detail</th>
+                <th className="px-3 py-1.5 text-left font-medium">Date</th>
+                <th className="px-3 py-1.5 text-left font-medium">Type</th>
+                <th className="px-3 py-1.5 text-left font-medium">Status</th>
+                <th className="px-3 py-1.5 text-left font-medium">Items</th>
+                <th className="px-3 py-1.5 text-left font-medium">Detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {reportsResult.reports.map((r, i) => (
                 <tr key={i} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 text-slate-700">{r.report_date}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{r.report_type}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-1.5 text-slate-700">{r.report_date}</td>
+                  <td className="px-3 py-1.5 font-mono text-xs text-slate-600">{r.report_type}</td>
+                  <td className="px-3 py-1.5">
                     <Badge label={r.status} status={r.status} />
                   </td>
-                  <td className="px-4 py-2.5 text-slate-500">{r.item_count ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-500 max-w-xs">
+                  <td className="px-3 py-1.5 text-slate-500">{r.item_count ?? '—'}</td>
+                  <td className="px-3 py-1.5 text-xs text-slate-500 max-w-xs">
                     <p className="truncate" title={r.detail}>{r.detail || '—'}</p>
                   </td>
                 </tr>

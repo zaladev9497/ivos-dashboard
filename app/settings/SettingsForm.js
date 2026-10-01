@@ -147,21 +147,21 @@ export default function SettingsForm({ calendar }) {
   const isTestActive = !!(calendar?.sms_redirect_to || calendar?.test_only)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-1.5">
       {result?.error && (
-        <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
           {result.error}
         </div>
       )}
       {result?.ok && (
-        <div className="rounded bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+        <div className="rounded bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
           Settings saved.
         </div>
       )}
 
       {/* Test mode status banner */}
       {isTestActive && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           <strong>Test mode is active.</strong>
           {calendar?.sms_redirect_to && <> All SMS are redirected to <code className="font-mono">{calendar.sms_redirect_to}</code>.</>}
           {calendar?.test_only && <> <code className="font-mono">test_only</code> flag is set.</>}
@@ -170,8 +170,8 @@ export default function SettingsForm({ calendar }) {
       )}
 
       {/* Business hours */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 px-4 py-2.5">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+        <div className="border-b border-slate-100 px-3 py-1.5">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Business hours & working days</span>
         </div>
         <div className="px-4 divide-y divide-slate-50">
@@ -219,7 +219,7 @@ export default function SettingsForm({ calendar }) {
             </div>
           </Field>
         </div>
-        <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-3">
+        <div className="px-3 py-2 border-t border-slate-100 flex items-center gap-3">
           <button
             onClick={handleSaveSchedule}
             disabled={saving}
@@ -231,8 +231,8 @@ export default function SettingsForm({ calendar }) {
       </div>
 
       {/* Quote validity */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 px-4 py-2.5">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+        <div className="border-b border-slate-100 px-3 py-1.5">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Quote validity</span>
         </div>
         <div className="px-4 divide-y divide-slate-50">
@@ -250,7 +250,7 @@ export default function SettingsForm({ calendar }) {
             </div>
           </Field>
         </div>
-        <div className="px-4 py-3 border-t border-slate-100">
+        <div className="px-3 py-2 border-t border-slate-100">
           <button
             onClick={handleSaveQuoteValidity}
             disabled={saving}
@@ -262,8 +262,8 @@ export default function SettingsForm({ calendar }) {
       </div>
 
       {/* Dangerous settings */}
-      <div className="rounded-lg border border-red-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-red-100 px-4 py-2.5">
+      <div className="rounded-md border border-red-200 bg-white overflow-hidden">
+        <div className="border-b border-red-100 px-3 py-1.5">
           <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Delivery controls — handle with care</span>
         </div>
         <div className="px-4 divide-y divide-slate-50">

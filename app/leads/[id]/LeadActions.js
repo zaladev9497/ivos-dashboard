@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { pauseJourney, resumeJourney, cancelScheduledMessage, handBackToBot, sendMessageNow } from './actions'
-import { formatDate } from '@/lib/utils'
+import { formatDate, templateLabel } from '@/lib/utils'
 
 function ActionResult({ result }) {
   if (!result) return null
@@ -133,7 +133,7 @@ function CancelMessageRow({ msg, demoMode }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-mono text-xs text-slate-600">{msg.template_key}</span>
+        <span className="text-xs font-medium text-slate-700" title={msg.template_key}>{templateLabel(msg.template_key)}</span>
         <span className="text-xs text-slate-400">{msg.channel}</span>
         <span className="text-xs text-slate-400">→ {formatDate(msg.scheduled_for)}</span>
         {demoMode && (
@@ -230,13 +230,13 @@ export default function LeadActions({ journeys, scheduledMessages, conversations
   if (!actionableJourneys.length && !pendingMessages.length && !takeoverConvs.length) return null
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+    <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+      <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
         Actions
       </div>
-      <div className="px-4 py-3 space-y-4 divide-y divide-slate-100">
+      <div className="px-3 py-2 space-y-1.5 divide-y divide-slate-100">
         {actionableJourneys.length > 0 && (
-          <div className="space-y-3 pt-0">
+          <div className="space-y-1.5 pt-0">
             <p className="text-xs font-medium text-slate-500">Journey</p>
             {actionableJourneys.map(j => <JourneyActions key={j.id} journey={j} />)}
           </div>

@@ -57,101 +57,97 @@ export default function LeadsTable({
   const hasUpcoming = (lead) =>
     lead.scheduled_messages?.some((m) => m.state === 'pending') ?? false
 
-  return (
-    <div className="space-y-4">
-      {/* Filter bar */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-48">
-            <label className="block text-xs font-medium text-slate-500 mb-1">Search</label>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name, email or phone…"
-              className="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Journey type</label>
-            <select
-              value={journeyType}
-              onChange={(e) => { setJourneyType(e.target.value); applyFilters({ journeyType: e.target.value }) }}
-              className="rounded border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="">All types</option>
-              <option value="retrofit">Retrofit</option>
-              <option value="new_construction">New Construction</option>
-              <option value="service">Service</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">From</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); applyFilters({ dateFrom: e.target.value }) }}
-              className="rounded border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">To</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); applyFilters({ dateTo: e.target.value }) }}
-              className="rounded border border-slate-200 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
-          </div>
-          <button
-            type="submit"
-            className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            Search
-          </button>
-          <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer self-end pb-1.5">
-            <input
-              type="checkbox"
-              checked={hasException}
-              onChange={(e) => { setHasException(e.target.checked); applyFilters({ hasException: e.target.checked }) }}
-            />
-            Has exception
-          </label>
-          <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer self-end pb-1.5">
-            <input
-              type="checkbox"
-              checked={showTest}
-              onChange={(e) => { setShowTest(e.target.checked); applyFilters({ showTest: e.target.checked }) }}
-            />
-            Show test records
-          </label>
-        </form>
-      </div>
+  const field = 'h-8 rounded border border-slate-200 bg-white px-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-slate-400'
+  const th = 'px-3 py-1.5 text-left font-medium'
+  const td = 'px-3 py-1.5'
 
-      {/* Error */}
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
+      {/* Toolbar */}
+      <form
+        onSubmit={handleSearch}
+        className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2"
+      >
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name, email or phone…"
+          aria-label="Search"
+          className={`${field} min-w-44 flex-1 sm:max-w-xs`}
+        />
+        <select
+          value={journeyType}
+          onChange={(e) => { setJourneyType(e.target.value); applyFilters({ journeyType: e.target.value }) }}
+          aria-label="Journey type"
+          className={field}
+        >
+          <option value="">All types</option>
+          <option value="retrofit">Retrofit</option>
+          <option value="new_construction">New Construction</option>
+          <option value="service">Service</option>
+        </select>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); applyFilters({ dateFrom: e.target.value }) }}
+          aria-label="From date"
+          title="From"
+          className={field}
+        />
+        <span className="text-slate-400">–</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); applyFilters({ dateTo: e.target.value }) }}
+          aria-label="To date"
+          title="To"
+          className={field}
+        />
+        <button type="submit" className="h-8 rounded bg-slate-800 px-3 text-[13px] font-medium text-white hover:bg-slate-700">
+          Search
+        </button>
+        <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600">
+          <input
+            type="checkbox"
+            checked={hasException}
+            onChange={(e) => { setHasException(e.target.checked); applyFilters({ hasException: e.target.checked }) }}
+          />
+          Exceptions
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600">
+          <input
+            type="checkbox"
+            checked={showTest}
+            onChange={(e) => { setShowTest(e.target.checked); applyFilters({ showTest: e.target.checked }) }}
+          />
+          Test records
+        </label>
+        <span className="ml-auto text-xs tabular-nums text-slate-500">
+          {total} lead{total !== 1 ? 's' : ''}
+        </span>
+      </form>
+
       {fetchError && (
-        <div className="rounded bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="shrink-0 border-b border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {fetchError}
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
-          <span className="text-sm text-slate-500">{total} lead{total !== 1 ? 's' : ''}</span>
-        </div>
+      {/* Scrollable table body, sticky header */}
+      <div className="min-h-0 flex-1 overflow-auto">
         {initialLeads.length === 0 ? (
           <EmptyState title="No leads found" description="Try adjusting your filters or search." />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <table className="w-full min-w-[560px] text-[13px]">
+            <thead className="sticky top-0 z-10 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 shadow-[inset_0_-1px_0] shadow-slate-200">
               <tr>
-                <th className="px-4 py-2 text-left">Lead</th>
-                <th className="px-4 py-2 text-left">Phone</th>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Stage</th>
-                <th className="px-4 py-2 text-left">Last activity</th>
-                <th className="px-4 py-2 text-left">Status</th>
+                <th className={th}>Lead</th>
+                <th className={`${th} hidden md:table-cell`}>Phone</th>
+                <th className={`${th} hidden sm:table-cell`}>Type</th>
+                <th className={`${th} hidden lg:table-cell`}>Stage</th>
+                <th className={`${th} hidden xl:table-cell`}>Last activity</th>
+                <th className={th}>Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -159,47 +155,36 @@ export default function LeadsTable({
                 const journey = latestJourney(lead)
                 const exc = activeExceptions(lead)
                 return (
-                  <tr key={lead.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-2.5">
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="font-medium text-slate-800 hover:text-blue-600"
-                      >
-                        {lead.full_name || '—'}
-                      </Link>
-                      {lead.is_test_record && (
-                        <Badge label="test" status="test" className="ml-1.5" />
-                      )}
-                      {lead.needs_manual_routing && (
-                        <Badge label="manual" status="medium" className="ml-1.5" />
-                      )}
-                      {exc > 0 && (
-                        <Badge label={`${exc} exc`} status="high" className="ml-1.5" />
-                      )}
+                  <tr key={lead.id} className="hover:bg-slate-50">
+                    <td className={td}>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="font-medium text-slate-800 hover:text-blue-600"
+                        >
+                          {lead.full_name || '—'}
+                        </Link>
+                        {lead.is_test_record && <Badge label="test" status="test" />}
+                        {lead.needs_manual_routing && <Badge label="manual" status="medium" />}
+                        {exc > 0 && <Badge label={`${exc} exc`} status="high" />}
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5 text-slate-500 font-mono text-xs">{lead.phone ?? '—'}</td>
-                    <td className="px-4 py-2.5">
+                    <td className={`${td} hidden font-mono text-xs text-slate-500 md:table-cell`}>{lead.phone ?? '—'}</td>
+                    <td className={`${td} hidden sm:table-cell`}>
                       {lead.journey_type ? (
                         <Badge label={journeyTypeLabel(lead.journey_type)} status="pending" />
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5">
-                      {journey ? (
-                        <span className="text-slate-700">{journey.current_stage ?? journey.state}</span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
+                    <td className={`${td} hidden text-slate-700 lg:table-cell`}>
+                      {journey ? (journey.current_stage ?? journey.state) : <span className="text-slate-400">—</span>}
                     </td>
-                    <td className="px-4 py-2.5">
-                      <Timestamp iso={journey?.updated_at ?? lead.ingested_at} />
+                    <td className={`${td} hidden xl:table-cell`}>
+                      <Timestamp iso={journey?.updated_at ?? lead.ingested_at} inline />
                     </td>
-                    <td className="px-4 py-2.5">
-                      <Badge
-                        label={lead.request_status ?? 'unknown'}
-                        status={lead.request_status}
-                      />
+                    <td className={td}>
+                      <Badge label={lead.request_status ?? 'unknown'} status={lead.request_status} />
                     </td>
                   </tr>
                 )
@@ -207,13 +192,14 @@ export default function LeadsTable({
             </tbody>
           </table>
         )}
-        <Pagination
-          page={currentPage}
-          total={total}
-          pageSize={pageSize}
-          onPage={(p) => startTransition(() => router.push(buildUrl({ page: p })))}
-        />
       </div>
+
+      <Pagination
+        page={currentPage}
+        total={total}
+        pageSize={pageSize}
+        onPage={(p) => startTransition(() => router.push(buildUrl({ page: p })))}
+      />
     </div>
   )
 }

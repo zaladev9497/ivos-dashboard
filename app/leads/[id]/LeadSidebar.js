@@ -12,12 +12,12 @@ function Field({ label, children }) {
 
 function Section({ title, children }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+    <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+      <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
         {title}
       </div>
       <dl className="divide-y divide-slate-50">
-        <div className="px-4 py-3 grid grid-cols-1 gap-3">{children}</div>
+        <div className="px-3 py-2 grid grid-cols-1 gap-3">{children}</div>
       </dl>
     </div>
   )
@@ -29,7 +29,7 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
   const conv = conversations[0]
 
   return (
-    <aside className="space-y-4">
+    <aside className="space-y-1.5">
       {/* Contact */}
       <Section title="Contact">
         <Field label="Name">{lead.full_name}</Field>

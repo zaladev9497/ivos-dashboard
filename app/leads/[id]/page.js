@@ -70,7 +70,7 @@ export default async function LeadDetailPage({ params }) {
   for (const t of allTemplates) templateLabels[t.template_key] = t
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1.5">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <Link href="/" className="hover:text-slate-800">Leads</Link>
@@ -80,7 +80,7 @@ export default async function LeadDetailPage({ params }) {
 
       {demoMode && <AdvanceButton pollIntervalSeconds={demoPollInterval} />}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-1.5">
         {/* Timeline */}
         <Timeline
           lead={lead}
@@ -97,7 +97,7 @@ export default async function LeadDetailPage({ params }) {
         />
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-1.5">
           <LeadActions
             journeys={journeys}
             scheduledMessages={scheduledMessages}

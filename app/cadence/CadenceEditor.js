@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Badge from '@/components/Badge'
 import EmptyState from '@/components/EmptyState'
 import { updateCadenceStep } from './actions'
+import { templateLabel } from '@/lib/utils'
 
 const UNIT_LABELS = { minutes: 'min', calendar_days: 'cal days', business_days: 'biz days', months: 'months' }
 const UNITS = ['minutes', 'calendar_days', 'business_days', 'months']
@@ -71,7 +72,7 @@ function StepRow({ step, quoteValidityDays, collision, onSaved, demoMode }) {
   const channelColor = step.channel === 'sms' ? 'text-sky-600' : step.channel === 'task' ? 'text-amber-600' : 'text-slate-500'
 
   return (
-    <div className={`px-4 py-3 ${!enabled ? 'opacity-50' : ''}`}>
+    <div className={`px-3 py-2 ${!enabled ? 'opacity-50' : ''}`}>
       <div className="flex items-center gap-3 flex-wrap">
         {/* Enable toggle */}
         <button
@@ -83,7 +84,7 @@ function StepRow({ step, quoteValidityDays, collision, onSaved, demoMode }) {
         </button>
 
         {/* Template key */}
-        <span className="font-mono text-xs text-slate-700 flex-1 min-w-40">{step.template_key}</span>
+        <span className="flex-1 min-w-40 text-[13px] text-slate-800" title={step.template_key}>{templateLabel(step.template_key)}</span>
 
         {/* Channel */}
         <span className={`text-xs font-medium ${channelColor}`}>{step.channel}</span>
@@ -177,7 +178,7 @@ function TimelinePreview({ steps }) {
 
   if (!enabled.length) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm px-4 py-3">
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Schedule preview (enabled steps only)</p>
       <div className="flex items-start gap-0 flex-wrap">
         {enabled.map((s, i) => (
@@ -206,10 +207,7 @@ export default function CadenceEditor({ steps, journeyType, journeys, journeyCou
   const activeCount = journeyCounts[journeyType] ?? 0
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-800">Cadence Timing</h1>
-      </div>
+    <div className="space-y-1.5">
 
       {/* Journey tab selector */}
       <div className="flex gap-1 border-b border-slate-200">
@@ -217,7 +215,7 @@ export default function CadenceEditor({ steps, journeyType, journeys, journeyCou
           <button
             key={j}
             onClick={() => startTransition(() => router.push(`/cadence?journey=${j}`))}
-            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px transition-colors ${
+            className={`px-3 py-1.5 text-[13px] font-medium capitalize border-b-2 -mb-px transition-colors ${
               journeyType === j ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -228,7 +226,7 @@ export default function CadenceEditor({ steps, journeyType, journeys, journeyCou
 
       {/* Active journeys notice */}
       {activeCount > 0 && (
-        <div className="rounded bg-blue-50 border border-blue-200 px-4 py-2.5 text-sm text-blue-700">
+        <div className="rounded bg-blue-50 border border-blue-200 px-3 py-1.5 text-sm text-blue-700">
           <strong>{activeCount} journey{activeCount !== 1 ? 's' : ''}</strong> currently running on the existing schedule. Changes only affect future journeys.
         </div>
       )}
@@ -238,8 +236,8 @@ export default function CadenceEditor({ steps, journeyType, journeys, journeyCou
 
       {/* Steps grouped by trigger */}
       {Object.entries(groups).map(([trigger, triggerSteps]) => (
-        <div key={trigger} className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-slate-100 px-4 py-2.5 flex items-center justify-between">
+        <div key={trigger} className="rounded-md border border-slate-200 bg-white overflow-hidden">
+          <div className="border-b border-slate-100 px-3 py-1.5 flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Trigger: {trigger}</span>
             <span className="text-xs text-slate-400">{triggerSteps.filter(s => s.enabled).length}/{triggerSteps.length} enabled</span>
           </div>

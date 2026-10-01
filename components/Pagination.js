@@ -5,7 +5,7 @@ export default function Pagination({ page, total, pageSize, onPage }) {
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
+    <div className="flex items-center justify-between shrink-0 border-t border-slate-200 px-3 py-1.5 text-xs text-slate-600">
       <span>
         {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
       </span>

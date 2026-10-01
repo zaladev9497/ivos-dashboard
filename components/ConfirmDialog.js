@@ -8,7 +8,7 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
       onClick={onCancel}
     >
       <div
-        className="rounded-xl bg-white shadow-2xl max-w-md w-full mx-4 p-6 space-y-4"
+        className="rounded-xl bg-white shadow-2xl max-w-md w-full mx-4 p-4 space-y-1.5"
         onClick={e => e.stopPropagation()}
       >
         <h2 className="text-base font-semibold text-slate-800">{title}</h2>

@@ -1,5 +1,5 @@
 import TimelineEntry from './TimelineEntry'
-import { formatDayHeading } from '@/lib/utils'
+import { formatDayHeading, templateLabel } from '@/lib/utils'
 
 // ─── Human labels ──────────────────────────────────────────────────────────────
 
@@ -24,17 +24,7 @@ function humanEventLabel(key) {
 }
 
 function humanizeTemplateKey(key) {
-  if (!key) return 'Scheduled message'
-  const journeyPrefixes = new Set(['retrofit', 'new_construction', 'service', 'post_sale'])
-  const parts = key.split('.')
-  const relevant = journeyPrefixes.has(parts[0]) ? parts.slice(1) : parts
-  return relevant
-    .map(p => p
-      .replace(/_/g, ' ')
-      .replace(/([a-zA-Z])(\d+)/, '$1 $2')
-      .replace(/\b\w/g, c => c.toUpperCase())
-    )
-    .join(', ')
+  return key ? templateLabel(key) : 'Scheduled message'
 }
 
 // ─── Type rank (higher = shown earlier when timestamps tie) ────────────────────
@@ -329,11 +319,11 @@ export default function Timeline(props) {
   const dayGroups = groupByDay(past)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-1.5">
       {/* Upcoming */}
       {upcoming.length > 0 && (
-        <div className="rounded-lg border border-blue-100 bg-blue-50 shadow-sm overflow-hidden">
-          <div className="border-b border-blue-100 px-4 py-2.5 text-xs font-semibold text-blue-700 uppercase tracking-wide">
+        <div className="rounded-md border border-blue-100 bg-blue-50 overflow-hidden">
+          <div className="border-b border-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 uppercase tracking-wide">
             Upcoming ({upcoming.length})
           </div>
           <div className="px-4 py-2 divide-y divide-blue-100">
@@ -345,8 +335,8 @@ export default function Timeline(props) {
       )}
 
       {/* Past timeline grouped by day */}
-      <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+        <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
           Timeline{past.length > 0 ? ` (${past.length})` : ''}
         </div>
         {past.length === 0 ? (
