@@ -14,19 +14,30 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="space-y-1.5 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-slate-800">Settings</span>
+    <div className="page rise">
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="page-lede">Business hours, cadence timing and delivery behaviour.</p>
+        </div>
         {calendar?.updated_at && (
-          <span className="text-xs text-slate-400">
+          <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
             Last updated {formatDate(calendar.updated_at)}
           </span>
         )}
-      </div>
+      </header>
 
       {!calendar && (
-        <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
-          Could not load business calendar. Check that <code className="font-mono">SUPABASE_URL</code> and <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> are set.
+        <div
+          className="rounded-[7px] border px-3.5 py-2.5 text-[12.5px]"
+          style={{
+            borderColor: 'var(--signal-warn-rule)',
+            background: 'var(--signal-warn-soft)',
+            color: 'var(--tone-warn-ink)',
+          }}
+        >
+          Could not load business calendar. Check that <code className="mono text-[11.5px]">SUPABASE_URL</code> and{' '}
+          <code className="mono text-[11.5px]">SUPABASE_SERVICE_ROLE_KEY</code> are set.
         </div>
       )}
 

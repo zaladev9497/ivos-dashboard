@@ -4,7 +4,8 @@ import { requireActor } from '@/lib/auth'
 import { createServerClient } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+// working_days is stored as integer[] of ISO weekdays: 1 = Monday ... 7 = Sunday.
+const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7]
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/
 
 function validTimezone(tz) {
@@ -34,8 +35,10 @@ const FIELD_RULES = {
   close_time: (v) => (typeof v === 'string' && TIME_RE.test(v) ? { value: v } : { error: 'Closing time must look like 17:00.' }),
   working_days: (v) => {
     if (!Array.isArray(v) || v.length === 0) return { error: 'Choose at least one working day.' }
-    if (!v.every((d) => DAYS.includes(d))) return { error: 'Working days contain an unknown day.' }
-    return { value: DAYS.filter((d) => v.includes(d)) }
+    const nums = v.map(Number)
+    if (!nums.every((d) => ISO_WEEKDAYS.includes(d))) return { error: 'Working days contain an unknown day.' }
+    // Stored ascending (Mon-first) and de-duplicated.
+    return { value: ISO_WEEKDAYS.filter((d) => nums.includes(d)) }
   },
   quote_validity_days: (v) => (Number.isInteger(v) && v >= 1 && v <= 365 ? { value: v } : { error: 'Quote validity must be a whole number from 1 to 365 days.' }),
   sms_redirect_to: (v) => {

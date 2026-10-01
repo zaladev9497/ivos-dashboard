@@ -2,9 +2,6 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-const input =
-  'w-full rounded border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400'
-
 export default function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
@@ -42,35 +39,58 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-md border border-slate-200 bg-white p-5">
+    <form onSubmit={handleSubmit} className="surface space-y-4 p-6">
       {error && (
-        <div role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-[5px] border px-3 py-2 text-[12.5px]"
+          style={{
+            borderColor: 'var(--signal-neg-rule)',
+            background: 'var(--signal-neg-soft)',
+            color: 'var(--tone-neg-ink)',
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="mt-px h-4 w-4 shrink-0" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7.5v5M12 16v.01" />
+          </svg>
           {error}
         </div>
       )}
+
       <div>
-        <label htmlFor="email" className="mb-1 block text-xs font-medium text-slate-500">Email</label>
+        <label htmlFor="email" className="eyebrow mb-1.5 block">Email</label>
         <input
           id="email" name="email" type="email" required autoFocus
           autoComplete="username" inputMode="email" spellCheck={false}
           value={email} onChange={(e) => setEmail(e.target.value)}
-          className={input} placeholder="you@example.com"
+          className="field h-9 w-full" placeholder="you@example.com"
         />
       </div>
+
       <div>
-        <label htmlFor="password" className="mb-1 block text-xs font-medium text-slate-500">Password</label>
+        <label htmlFor="password" className="eyebrow mb-1.5 block">Password</label>
         <input
           id="password" name="password" type="password" required
           autoComplete="current-password"
           value={password} onChange={(e) => setPassword(e.target.value)}
-          className={input} placeholder="Dashboard password"
+          className="field h-9 w-full" placeholder="••••••••••"
         />
       </div>
-      <button
-        type="submit" disabled={loading}
-        className="w-full rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-      >
-        {loading ? 'Signing in…' : 'Sign in'}
+
+      <button type="submit" disabled={loading} className="btn btn-primary mt-1 h-9 w-full">
+        {loading ? (
+          <>
+            <span
+              className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-transparent"
+              style={{ borderTopColor: 'currentColor', borderRightColor: 'currentColor' }}
+              aria-hidden="true"
+            />
+            Signing in…
+          </>
+        ) : (
+          'Sign in'
+        )}
       </button>
     </form>
   )

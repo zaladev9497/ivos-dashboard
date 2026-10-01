@@ -71,17 +71,23 @@ export default async function LeadDetailPage({ params }) {
   for (const t of allTemplates) templateLabels[t.template_key] = t
 
   return (
-    <div className="space-y-1.5">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Link href="/" className="hover:text-slate-800">Leads</Link>
-        <span>/</span>
-        <span className="text-slate-800 font-medium">{lead.full_name || lead.id}</span>
-      </div>
+    <div className="page rise">
+      {/* Breadcrumb + title. The lead's name is the page heading, set in the
+          display face — this is a record, and it should read like one. */}
+      <header>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11.5px]">
+          <Link href="/" className="transition-colors hover:text-[var(--accent)]" style={{ color: 'var(--ink-muted)' }}>
+            Leads
+          </Link>
+          <span style={{ color: 'var(--ink-faint)' }}>/</span>
+          <span style={{ color: 'var(--ink-faint)' }}>Record</span>
+        </nav>
+        <h1 className="page-title mt-1">{lead.full_name || lead.id}</h1>
+      </header>
 
       {demoMode && <AdvanceButton pollIntervalSeconds={demoPollInterval} />}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-1.5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
         {/* Timeline */}
         <Timeline
           lead={lead}
@@ -98,7 +104,7 @@ export default async function LeadDetailPage({ params }) {
         />
 
         {/* Sidebar */}
-        <div className="space-y-1.5">
+        <div className="space-y-4">
           <LeadActions
             journeys={journeys}
             scheduledMessages={scheduledMessages}

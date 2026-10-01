@@ -62,32 +62,99 @@ export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
   }, [autoMode, pollIntervalSeconds])
 
   return (
-    <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 space-y-2">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs font-semibold text-violet-700 uppercase tracking-wide shrink-0">Demo</span>
+    <div
+      className="space-y-2 rounded-[9px] border px-3 py-2.5"
+      style={{ borderColor: 'var(--signal-alt-rule)', background: 'var(--signal-alt-soft)' }}
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="eyebrow shrink-0" style={{ color: 'var(--tone-alt-ink)' }}>Demo</span>
 
         <button
           type="button"
           onClick={advance}
           disabled={running}
-          className="rounded bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
+          className="btn h-7 px-3"
+          style={{
+            background: 'var(--signal-alt)',
+            border: '1px solid var(--signal-alt)',
+            color: 'var(--on-signal)',
+            boxShadow: 'var(--lift-flat), inset 0 1px 0 color-mix(in oklab, white 18%, transparent)',
+          }}
         >
-          {running ? 'Advancing…' : '▶ Advance'}
+          {running ? (
+            <>
+              <span
+                className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-transparent"
+                style={{ borderTopColor: 'currentColor', borderRightColor: 'currentColor' }}
+                aria-hidden="true"
+              />
+              Advancing…
+            </>
+          ) : (
+            <>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3" aria-hidden="true">
+                <path d="M7 5.5l11 6.5-11 6.5z" />
+              </svg>
+              Advance
+            </>
+          )}
         </button>
 
-        <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer">
-          <input type="checkbox" checked={autoMode} onChange={e => setAutoMode(e.target.checked)} />
+        {/* Auto-advance toggle — a switch, because it is a running state rather
+            than a value being submitted with a form. */}
+        <label className="flex cursor-pointer select-none items-center gap-2 text-[12.5px]" style={{ color: 'var(--ink-secondary)' }}>
+          <input
+            type="checkbox"
+            checked={autoMode}
+            onChange={e => setAutoMode(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            className="relative h-[18px] w-8 shrink-0 rounded-full transition-colors"
+            style={{
+              background: autoMode ? 'var(--signal-alt)' : 'var(--rule-strong)',
+              boxShadow: 'inset 0 1px 2px color-mix(in oklab, var(--ink) 12%, transparent)',
+            }}
+            aria-hidden="true"
+          >
+            <span
+              className="absolute top-[2px] h-3.5 w-3.5 rounded-full transition-[left] duration-200 ease-out"
+              style={{
+                left: autoMode ? '16px' : '2px',
+                background: 'var(--knob)',
+                boxShadow: '0 1px 2px color-mix(in oklab, var(--ink) 28%, transparent)',
+              }}
+            />
+          </span>
           Auto every {pollIntervalSeconds}s
-          {autoMode && <span className="text-xs text-violet-500 ml-1">(stops in 15 min or on tab switch)</span>}
+          {autoMode && (
+            <span className="text-[11px]" style={{ color: 'var(--tone-alt-ink)' }}>
+              (stops in 15 min or on tab switch)
+            </span>
+          )}
         </label>
 
-        <span className={`text-xs ml-auto ${count >= WARN_AT ? 'text-red-600 font-semibold' : 'text-slate-400'}`}>
-          {count >= WARN_AT && '⚠ '}Demo runs: {count}{count >= WARN_AT && ' — near n8n limit'}
+        <span
+          className="ml-auto text-[11.5px]"
+          style={{
+            color: count >= WARN_AT ? 'var(--tone-neg-ink)' : 'var(--ink-faint)',
+            fontWeight: count >= WARN_AT ? 600 : 400,
+          }}
+        >
+          {count >= WARN_AT && '⚠ '}Demo runs: <span className="tabular">{count}</span>
+          {count >= WARN_AT && ' — near n8n limit'}
         </span>
       </div>
 
       {error && (
-        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+        <div
+          className="rounded-md border px-3 py-2 text-[12.5px]"
+          style={{
+            borderColor: 'var(--signal-neg-rule)',
+            background: 'var(--signal-neg-soft)',
+            color: 'var(--tone-neg-ink)',
+          }}
+        >
           {error}
         </div>
       )}

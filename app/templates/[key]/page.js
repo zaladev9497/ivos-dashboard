@@ -25,12 +25,21 @@ export default async function TemplatePage({ params }) {
   )
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Link href="/templates" className="hover:text-slate-800">Templates</Link>
-        <span>/</span>
-        <span className="font-medium text-slate-800" title={templateKey}>{templateLabel(templateKey)}</span>
-      </div>
+    <div className="page rise">
+      <header>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11.5px]">
+          <Link
+            href="/templates"
+            className="transition-colors hover:text-[var(--accent)]"
+            style={{ color: 'var(--ink-muted)' }}
+          >
+            Templates
+          </Link>
+          <span style={{ color: 'var(--ink-faint)' }}>/</span>
+          <span className="mono" style={{ color: 'var(--ink-faint)' }}>{templateKey}</span>
+        </nav>
+        <h1 className="page-title mt-1" title={templateKey}>{templateLabel(templateKey)}</h1>
+      </header>
       <TemplateEditor template={template} history={history} auditLogs={auditLogs} />
     </div>
   )

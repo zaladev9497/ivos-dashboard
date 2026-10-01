@@ -1,11 +1,26 @@
 'use client'
-import { statusClass } from '@/lib/utils'
+import { statusTone } from '@/lib/utils'
 
-export default function Badge({ label, status, className = '' }) {
+/**
+ * A status stamp. The coloured dot carries the signal so the pill itself can
+ * stay quiet at table density — a grid of these reads as a column of states,
+ * not as a row of coloured rectangles.
+ *
+ * `dot={false}` for pills that are labels rather than states (journey type).
+ */
+export default function Badge({ label, status, className = '', dot = true }) {
+  const tone = statusTone(status)
+
   return (
     <span
-      className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${statusClass(status)} ${className}`}
+      className={`badge ${className}`}
+      style={{
+        color: `var(--${tone}-ink)`,
+        background: `var(--${tone}-soft)`,
+        borderColor: `var(--${tone}-rule)`,
+      }}
     >
+      {dot && <span className="badge-dot" />}
       {label ?? status}
     </span>
   )

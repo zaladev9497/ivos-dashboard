@@ -13,15 +13,20 @@ function SmsCounter({ body }) {
   const warnings = typographicWarnings(body)
   const { invalid } = validateMergeFields(body)
 
-  const segColor = info.segments >= 3 ? 'text-red-600' : info.segments === 2 ? 'text-amber-600' : 'text-green-700'
+  const segColor =
+    info.segments >= 3
+      ? '[color:var(--tone-neg-ink)]'
+      : info.segments === 2
+        ? '[color:var(--tone-warn-ink)]'
+        : '[color:var(--tone-pos-ink)]'
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-4 text-xs">
-        <span className="text-slate-500">Encoding: <strong className="text-slate-700">{info.encoding}</strong></span>
-        <span className="text-slate-500">Characters: <strong className="text-slate-700">{info.length}</strong></span>
+        <span className="[color:var(--ink-muted)]">Encoding: <strong className="[color:var(--ink)]">{info.encoding}</strong></span>
+        <span className="[color:var(--ink-muted)]">Characters: <strong className="[color:var(--ink)]">{info.length}</strong></span>
         <span className={`font-semibold ${segColor}`}>{info.segments} segment{info.segments !== 1 ? 's' : ''}</span>
-        <span className="text-slate-400">{info.remaining >= 0 ? `${info.remaining} remaining in last segment` : `${Math.abs(info.remaining)} over capacity`}</span>
+        <span className="[color:var(--ink-faint)]">{info.remaining >= 0 ? `${info.remaining} remaining in last segment` : `${Math.abs(info.remaining)} over capacity`}</span>
       </div>
       {warnings.map((w, i) => (
         <div key={i} className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
@@ -42,17 +47,17 @@ function Preview({ body, channel }) {
   const preview = applyPreview(body)
   const isSms = channel === 'sms'
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3 h-full">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Preview</p>
+    <div className="h-full rounded-[9px] border p-3.5 [border-color:var(--rule)] [background:var(--paper-sunken)]">
+      <p className="eyebrow mb-2">Preview</p>
       {isSms ? (
         <div className="flex justify-end">
-          <div className="max-w-xs rounded-2xl rounded-br-sm bg-blue-500 text-white px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="max-w-xs whitespace-pre-wrap rounded-2xl rounded-br-sm px-3 py-2 text-[12.5px] leading-relaxed [background:var(--accent)] [color:var(--on-signal)]">
             {preview || <span className="opacity-40 italic">Start typing…</span>}
           </div>
         </div>
       ) : (
-        <div className="rounded bg-white border border-slate-200 px-3 py-2 text-sm text-slate-700 whitespace-pre-wrap">
-          {preview || <span className="text-slate-300 italic">Start typing…</span>}
+        <div className="whitespace-pre-wrap rounded-md border px-3 py-2 text-[12.5px] leading-relaxed [border-color:var(--rule-faint)] [background:var(--paper-raised)] [color:var(--ink-secondary)]">
+          {preview || <span className="italic [color:var(--ink-faint)]">Start typing…</span>}
         </div>
       )}
     </div>
@@ -64,28 +69,28 @@ function HistoryPanel({ history, auditLogs }) {
   const [open, setOpen] = useState(false)
   if (history.length <= 1) return null
   return (
-    <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+    <div className="surface overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-1.5 eyebrow transition-colors hover:[background:var(--paper-hover)]"
       >
         <span>Version history ({history.length})</span>
         <span>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y [border-color:var(--rule-faint)]">
           {history.map(h => {
             const audit = auditLogs.find(a => a.row_id === h.id)
             return (
               <div key={h.id} className="px-3 py-2 text-sm">
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="font-mono text-xs text-slate-500">v{h.version}</span>
+                  <span className="mono text-[11.5px] [color:var(--ink-muted)]">v{h.version}</span>
                   {h.is_active && <Badge label="current" status="sent" />}
                   {h.approved ? <Badge label="approved" status="sent" /> : <Badge label="not approved" status="failed" />}
-                  {audit && <span className="text-xs text-slate-400">{audit.actor} · {formatDate(audit.occurred_at)}</span>}
+                  {audit && <span className="text-[11.5px] [color:var(--ink-faint)]">{audit.actor} · {formatDate(audit.occurred_at)}</span>}
                 </div>
-                <pre className="text-xs text-slate-600 whitespace-pre-wrap bg-slate-50 rounded px-2 py-1.5 max-h-24 overflow-y-auto">{h.body}</pre>
-                {audit?.note && <p className="text-xs text-slate-400 mt-1">{audit.note}</p>}
+                <pre className="mono max-h-24 overflow-y-auto whitespace-pre-wrap rounded px-2 py-1.5 text-[11px] [background:var(--paper-sunken)] [color:var(--ink-secondary)]">{h.body}</pre>
+                {audit?.note && <p className="text-[11.5px] [color:var(--ink-faint)] mt-1">{audit.note}</p>}
               </div>
             )
           })}
@@ -127,17 +132,17 @@ export default function TemplateEditor({ template, history, auditLogs }) {
     <div className="space-y-1.5">
       {/* Unapproved banner */}
       {!template.approved && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <div className="rounded-md border px-3.5 py-2.5 text-[12.5px] [border-color:var(--signal-warn-rule)] [background:var(--signal-warn-soft)] [color:var(--tone-warn-ink)]">
           <strong>Not approved.</strong> Unapproved templates are not sent by the automation. Save your edits first, then have someone mark it approved below.
         </div>
       )}
 
       {/* Meta */}
-      <div className="rounded-md border border-slate-200 bg-white px-3 py-2 flex flex-wrap items-center gap-4 text-sm">
-        <span className="font-semibold text-slate-800">{templateLabel(template.template_key)}</span>
-        <span className="font-mono text-xs text-slate-400">{template.template_key}</span>
+      <div className="surface px-3 py-2 flex flex-wrap items-center gap-4 text-sm">
+        <span className="font-semibold [color:var(--ink)]">{templateLabel(template.template_key)}</span>
+        <span className="mono text-[11.5px] [color:var(--ink-faint)]">{template.template_key}</span>
         <Badge label={template.channel} status={template.channel === 'sms' ? 'sent' : 'pending'} />
-        <span className="text-slate-400">v{template.version}</span>
+        <span className="tabular [color:var(--ink-faint)]">v{template.version}</span>
         {template.approved ? <Badge label="Approved" status="sent" /> : <Badge label="Not approved" status="failed" />}
       </div>
 
@@ -154,36 +159,36 @@ export default function TemplateEditor({ template, history, auditLogs }) {
         <div className="space-y-1.5">
           {isTask && (
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Task title</label>
+              <label className="eyebrow mb-1.5 block">Task title</label>
               <input
                 type="text"
                 value={taskTitle}
                 onChange={e => setTaskTitle(e.target.value)}
-                className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+                className="field h-9 w-full"
                 placeholder="Task title shown in Jobber"
               />
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">
+            <label className="eyebrow mb-1.5 block">
               {isTask ? 'Task body' : 'SMS body'}
             </label>
             <textarea
               value={body}
               onChange={e => setBody(e.target.value)}
               rows={8}
-              className="w-full rounded border border-slate-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 resize-y"
+              className="field mono w-full resize-y py-2 leading-relaxed"
               placeholder="Message body…"
             />
           </div>
           {!isTask && <SmsCounter body={deferredBody} />}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Notes (internal)</label>
+            <label className="eyebrow mb-1.5 block">Notes (internal)</label>
             <input
               type="text"
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="w-full rounded border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="field h-9 w-full"
               placeholder="Optional notes for the team"
             />
           </div>
@@ -191,11 +196,11 @@ export default function TemplateEditor({ template, history, auditLogs }) {
             <button
               onClick={handleSave}
               disabled={saving || !dirty}
-              className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+              className="btn btn-primary"
             >
               {saving ? 'Saving…' : 'Save (bumps version)'}
             </button>
-            {!dirty && <span className="text-xs text-slate-400">No changes</span>}
+            {!dirty && <span className="text-[11.5px] [color:var(--ink-faint)]">No changes</span>}
           </div>
         </div>
 
@@ -205,21 +210,21 @@ export default function TemplateEditor({ template, history, auditLogs }) {
 
       {/* Approve section — separate from save, intentionally */}
       {!template.approved && (
-        <div className="rounded-md border border-slate-200 bg-white px-4 py-4 space-y-1.5">
-          <p className="text-sm font-medium text-slate-700">Mark as approved</p>
-          <p className="text-xs text-slate-500">Approval and editing are intentionally separate actions. Approving the current version (v{template.version}) allows the automation to send it. Enter the approver&apos;s name.</p>
+        <div className="surface px-4 py-4 space-y-1.5">
+          <p className="text-[13px] font-medium [color:var(--ink)]">Mark as approved</p>
+          <p className="text-[11.5px] [color:var(--ink-muted)]">Approval and editing are intentionally separate actions. Approving the current version (v{template.version}) allows the automation to send it. Enter the approver&apos;s name.</p>
           <div className="flex items-center gap-3">
             <input
               type="text"
               value={approverName}
               onChange={e => setApproverName(e.target.value)}
               placeholder="Approver name"
-              className="rounded border border-slate-200 px-3 py-2 text-sm w-48 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="field h-9 w-48"
             />
             <button
               onClick={handleApprove}
               disabled={approving || !approverName.trim()}
-              className="rounded bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:opacity-40"
+              className="btn btn-primary"
             >
               {approving ? 'Approving…' : 'Mark approved'}
             </button>

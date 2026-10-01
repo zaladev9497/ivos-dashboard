@@ -8,9 +8,35 @@ import { formatDate, templateLabel } from '@/lib/utils'
 function ActionResult({ result }) {
   if (!result) return null
   return (
-    <p className={`mt-1 text-xs ${result.error ? 'text-red-600' : 'text-green-700'}`}>
+    <p
+      className="mt-1.5 text-[11.5px] font-medium"
+      style={{ color: result.error ? 'var(--tone-neg-ink)' : 'var(--tone-pos-ink)' }}
+      role="status"
+    >
       {result.error ?? 'Done.'}
     </p>
+  )
+}
+
+// Inline disclosure form — a sunken well, so an open form reads as a drawer
+// pulled out of the panel rather than another card stacked on top of it.
+function Well({ children }) {
+  return (
+    <div
+      className="mt-2 space-y-2.5 rounded-md border p-3"
+      style={{ background: 'var(--paper-sunken)', borderColor: 'var(--rule-faint)' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function FieldLabel({ children, required }) {
+  return (
+    <label className="eyebrow mb-1.5 block">
+      {children}
+      {required && <span style={{ color: 'var(--signal-neg)' }}> *</span>}
+    </label>
   )
 }
 
@@ -43,64 +69,62 @@ function JourneyActions({ journey }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-slate-500 font-mono">{journey.journey_type}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mono text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>{journey.journey_type}</span>
         {isPaused ? (
-          <button
-            onClick={handleResume}
-            disabled={saving}
-            className="rounded bg-green-700 px-3 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-40"
-          >
+          <button onClick={handleResume} disabled={saving} className="btn btn-primary h-7 px-2.5 text-[11.5px]">
             {saving ? '…' : 'Resume journey'}
           </button>
         ) : (
-          <button
-            onClick={() => setOpen(true)}
-            className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700"
-          >
+          <button onClick={() => setOpen(true)} className="btn btn-quiet h-7 px-2.5 text-[11.5px]">
             Pause journey
           </button>
         )}
-        {journey.paused_reason && (
-          <span className="text-xs text-amber-600">Paused: {journey.paused_reason}</span>
-        )}
       </div>
+      {journey.paused_reason && (
+        <p className="text-[11.5px]" style={{ color: 'var(--tone-warn-ink)' }}>
+          Paused: {journey.paused_reason}
+        </p>
+      )}
       <ActionResult result={result} />
 
       {open && (
-        <div className="mt-2 space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+        <Well>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pause reason <span className="text-red-500">*</span></label>
+            <FieldLabel required>Pause reason</FieldLabel>
             <input
               type="text"
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder="e.g. Customer requested no contact until next week"
-              className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="field h-7 w-full text-[12px]"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Pause until (optional)</label>
+            <FieldLabel>Pause until (optional)</FieldLabel>
             <input
               type="date"
               value={pausedUntil}
               onChange={e => setPausedUntil(e.target.value)}
-              className="rounded border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="field h-7 text-[12px]"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePause}
               disabled={saving || !reason.trim()}
-              className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+              className="btn btn-primary h-7 px-2.5 text-[11.5px]"
             >
               {saving ? '…' : 'Confirm pause'}
             </button>
-            <button onClick={() => { setOpen(false); setResult(null) }} className="text-xs text-slate-500 hover:text-slate-800">
+            <button
+              onClick={() => { setOpen(false); setResult(null) }}
+              className="btn btn-ghost h-7 px-2 text-[11.5px]"
+            >
               Cancel
             </button>
           </div>
-        </div>
+        </Well>
       )}
     </div>
   )
@@ -132,51 +156,68 @@ function CancelMessageRow({ msg, demoMode }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-slate-700" title={msg.template_key}>{templateLabel(msg.template_key)}</span>
-        <span className="text-xs text-slate-400">{msg.channel}</span>
-        <span className="text-xs text-slate-400">→ {formatDate(msg.scheduled_for)}</span>
-        {demoMode && (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-[12px] font-medium" style={{ color: 'var(--ink)' }} title={msg.template_key}>
+          {templateLabel(msg.template_key)}
+        </span>
+        <span className="text-[11px]" style={{ color: 'var(--ink-faint)' }}>{msg.channel}</span>
+        <span className="text-[11px]" style={{ color: 'var(--ink-faint)' }}>→ {formatDate(msg.scheduled_for)}</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          {demoMode && (
+            <button
+              onClick={handleSendNow}
+              disabled={sending}
+              className="btn h-6 px-2 text-[11px]"
+              style={{
+                background: 'var(--signal-alt-soft)',
+                border: '1px solid var(--signal-alt-rule)',
+                color: 'var(--tone-alt-ink)',
+              }}
+            >
+              {sending ? 'Sending…' : 'Send now'}
+            </button>
+          )}
           <button
-            onClick={handleSendNow}
-            disabled={sending}
-            className="rounded bg-violet-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-40"
+            onClick={() => setOpen(v => !v)}
+            className="btn h-6 px-2 text-[11px]"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--signal-neg-rule)',
+              color: 'var(--tone-neg-ink)',
+            }}
           >
-            {sending ? 'Sending…' : 'Send now'}
+            Cancel
           </button>
-        )}
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50"
-        >
-          Cancel
-        </button>
+        </span>
       </div>
       {open && (
-        <div className="mt-1 space-y-2 rounded border border-slate-200 bg-slate-50 p-3">
+        <Well>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Reason <span className="text-red-500">*</span></label>
+            <FieldLabel required>Reason</FieldLabel>
             <input
               type="text"
               value={reason}
               onChange={e => setReason(e.target.value)}
               placeholder="e.g. Customer requested no more messages"
-              className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="field h-7 w-full text-[12px]"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleCancel}
               disabled={saving || !reason.trim()}
-              className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-40"
+              className="btn btn-danger h-7 px-2.5 text-[11.5px]"
             >
               {saving ? '…' : 'Confirm cancel'}
             </button>
-            <button onClick={() => { setOpen(false); setResult(null) }} className="text-xs text-slate-500 hover:text-slate-800">
+            <button
+              onClick={() => { setOpen(false); setResult(null) }}
+              className="btn btn-ghost h-7 px-2 text-[11.5px]"
+            >
               Dismiss
             </button>
           </div>
-        </div>
+        </Well>
       )}
       <ActionResult result={result} />
     </div>
@@ -199,12 +240,16 @@ function HandBackRow({ conv, leadId }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-amber-700 font-medium">Human takeover active</span>
-        <button
-          onClick={() => setConfirm(true)}
-          className="rounded bg-slate-800 px-3 py-1 text-xs font-medium text-white hover:bg-slate-700"
-        >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="badge" style={{
+          background: 'var(--tone-warn-soft)',
+          borderColor: 'var(--tone-warn-rule)',
+          color: 'var(--tone-warn-ink)',
+        }}>
+          <span className="badge-dot" />
+          Human takeover active
+        </span>
+        <button onClick={() => setConfirm(true)} className="btn btn-primary h-7 px-2.5 text-[11.5px]">
           Hand back to bot
         </button>
       </div>
@@ -230,29 +275,29 @@ export default function LeadActions({ journeys, scheduledMessages, conversations
   if (!actionableJourneys.length && !pendingMessages.length && !takeoverConvs.length) return null
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-      <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-        Actions
+    <section className="surface overflow-hidden">
+      <div className="section-head">
+        <span className="eyebrow">Actions</span>
       </div>
-      <div className="px-3 py-2 space-y-1.5 divide-y divide-slate-100">
+      <div className="divide-y px-5" style={{ borderColor: 'var(--rule-faint)' }}>
         {actionableJourneys.length > 0 && (
-          <div className="space-y-1.5 pt-0">
-            <p className="text-xs font-medium text-slate-500">Journey</p>
+          <div className="space-y-2 py-3">
+            <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>Journey</p>
             {actionableJourneys.map(j => <JourneyActions key={j.id} journey={j} />)}
           </div>
         )}
         {pendingMessages.length > 0 && (
-          <div className="space-y-2 pt-3">
-            <p className="text-xs font-medium text-slate-500">Pending messages</p>
+          <div className="space-y-2.5 py-3">
+            <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>Pending messages</p>
             {pendingMessages.map(m => <CancelMessageRow key={m.id} msg={m} demoMode={demoMode} />)}
           </div>
         )}
         {takeoverConvs.length > 0 && (
-          <div className="space-y-2 pt-3">
+          <div className="space-y-2 py-3">
             {takeoverConvs.map(c => <HandBackRow key={c.id} conv={c} leadId={leadId} />)}
           </div>
         )}
       </div>
-    </div>
+    </section>
   )
 }

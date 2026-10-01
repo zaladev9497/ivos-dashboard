@@ -2,160 +2,873 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   IVOS — Editorial Precision
+   ───────────────────────────────────────────────────────────────────────────
+   A design language built on printed-report conventions: warm paper rather
+   than clinical white, true ink rather than blue-grey, one earned accent, and
+   hierarchy carried by type and spacing instead of boxes inside boxes.
+
+   Three rules this file enforces:
+     1. Surfaces are warm. Neutrals carry a slight amber cast (hue 75), so the
+        screen reads as paper under lamplight, never as a default stylesheet.
+     2. Borders whisper, shadows speak. Separation comes from a tinted hairline
+        plus a short, soft shadow — not from a hard 1px grey box.
+     3. Colour is signal only. Amber is the brand; red/green/blue appear solely
+        to mean failed / delivered / in-flight.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-fraunces);
+  --font-mono: var(--font-jetbrains);
+}
+
+:root {
+  /* ── Surface: cool graphite ramp (hue 265, chroma fading toward ink) ────
+     A faint blue cast rather than a warm one — the screen reads as cool
+     stone under daylight, which keeps indigo looking intentional instead of
+     fighting a yellow ground. */
+  --paper:            oklch(98.2% 0.0035 265);  /* app background       */
+  --paper-raised:     oklch(99.5% 0.002 265);   /* cards, panels        */
+  --paper-sunken:     oklch(96.3% 0.006 265);   /* table heads, wells   */
+  --paper-hover:      oklch(97.1% 0.008 265);   /* row hover            */
+
+  /* ── Ink: text ramp ─────────────────────────────────────────────────────── */
+  --ink:              oklch(20% 0.018 268);     /* headings, primary    */
+  --ink-secondary:    oklch(42% 0.015 266);     /* body, table cells    */
+  --ink-muted:        oklch(54% 0.014 265);     /* labels, meta         */
+  --ink-faint:        oklch(65% 0.013 265);     /* placeholders, em-dash*/
+
+  /* ── Rules: hairlines, tinted so they sit in the surface, not on it ─────── */
+  --rule:             oklch(90% 0.009 265);     /* standard border      */
+  --rule-strong:      oklch(84% 0.012 265);     /* emphasis border      */
+  --rule-faint:       oklch(94% 0.006 265);     /* internal dividers    */
+
+  /* ── Accent: deep indigo. The single brand colour. ──────────────────────── */
+  --accent:           oklch(51% 0.195 276);
+  --accent-hover:     oklch(45% 0.198 275);
+  --accent-soft:      oklch(95.5% 0.028 277);   /* tinted fill          */
+  --accent-rule:      oklch(86% 0.062 277);     /* tinted border        */
+  --accent-ink:       oklch(44% 0.185 275);     /* text on soft fill    */
+
+  /* ── Signal: status only ────────────────────────────────────────────────── */
+  --signal-pos:       oklch(53% 0.115 152);    /* delivered, resolved   */
+  --signal-pos-soft:  oklch(95.8% 0.034 155);
+  --signal-pos-rule:  oklch(86% 0.065 154);
+
+  --signal-warn:      oklch(58% 0.125 62);     /* test, acknowledged    */
+  --signal-warn-soft: oklch(96.2% 0.042 72);
+  --signal-warn-rule: oklch(86.5% 0.078 68);
+
+  --signal-neg:       oklch(53% 0.185 22);     /* failed, open, high    */
+  --signal-neg-soft:  oklch(95.6% 0.028 20);
+  --signal-neg-rule:  oklch(86% 0.068 21);
+
+  --signal-info:      oklch(53% 0.115 232);    /* pending, in-flight    */
+  --signal-info-soft: oklch(96% 0.030 235);
+  --signal-info-rule: oklch(86.5% 0.058 233);
+
+  --signal-alt:       oklch(52% 0.175 320);    /* inbound               */
+  --signal-alt-soft:  oklch(96% 0.028 320);
+  --signal-alt-rule:  oklch(87.5% 0.055 320);
+
+  /* ── Elevation: short + soft, stacked. Never a single blurry drop. ──────── */
+  --lift-flat:  0 1px 1px -0.5px oklch(28% 0.035 266 / 0.04);
+  --lift-card:  0 1px 2px -1px oklch(28% 0.035 266 / 0.08),
+                0 2px 6px -2px oklch(28% 0.035 266 / 0.05);
+  --lift-float: 0 2px 4px -2px oklch(28% 0.035 266 / 0.10),
+                0 8px 20px -6px oklch(28% 0.035 266 / 0.12);
+  --lift-modal: 0 8px 16px -8px oklch(22% 0.040 266 / 0.18),
+                0 24px 56px -16px oklch(22% 0.040 266 / 0.22);
+
+
+  /* ── Tone triples: every badge/state resolves to one of these six. Named by
+        meaning, not by colour, so a status can be re-toned in one place. ──── */
+  --tone-neutral-soft: oklch(96.2% 0.006 265);
+  --tone-neutral-rule: oklch(89% 0.009 265);
+  --tone-neutral-ink:  oklch(44% 0.014 266);
+
+  --tone-accent-soft: var(--accent-soft);
+  --tone-accent-rule: var(--accent-rule);
+  --tone-accent-ink:  var(--accent-ink);
+
+  --tone-pos-soft: var(--signal-pos-soft);
+  --tone-pos-rule: var(--signal-pos-rule);
+  --tone-pos-ink:  oklch(43% 0.100 152);
+
+  --tone-warn-soft: var(--signal-warn-soft);
+  --tone-warn-rule: var(--signal-warn-rule);
+  --tone-warn-ink:  oklch(46% 0.110 62);
+
+  --tone-neg-soft: var(--signal-neg-soft);
+  --tone-neg-rule: var(--signal-neg-rule);
+  --tone-neg-ink:  oklch(46% 0.175 22);
+
+  --tone-info-soft: var(--signal-info-soft);
+  --tone-info-rule: var(--signal-info-rule);
+  --tone-info-ink:  oklch(45% 0.108 232);
+
+  --tone-alt-soft: var(--signal-alt-soft);
+  --tone-alt-rule: var(--signal-alt-rule);
+  --tone-alt-ink:  oklch(45% 0.160 320);
+
+  /* Text/fills that sit ON a saturated signal colour. In light mode the
+     signal fills are dark, so this is near-white; in dark mode the fills are
+     light, so it flips to ink. Without this, white-on-light-amber in dark
+     mode is unreadable. */
+  --on-signal: oklch(99% 0.003 265);
+  /* Toggle knobs and other raised chips that ride on a coloured track. */
+  --knob: oklch(99% 0.003 265);
+
+  --radius-sm: 5px;
+  --radius:    7px;
+  --radius-lg: 11px;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Cool darkness — hue held at 265 so the dark theme is the same room at
+     night, not a different product. Never pure #000; the slight blue in the
+     greys keeps large dark areas from looking dead. */
+  --paper:            oklch(16% 0.012 265);
+  --paper-raised:     oklch(20% 0.014 265);
+  --paper-sunken:     oklch(18% 0.013 265);
+  --paper-hover:      oklch(24% 0.016 265);
+
+  --ink:              oklch(96% 0.006 265);
+  --ink-secondary:    oklch(80% 0.010 265);
+  --ink-muted:        oklch(64% 0.012 265);
+  --ink-faint:        oklch(50% 0.012 265);
+
+  --rule:             oklch(28% 0.016 265);
+  --rule-strong:      oklch(37% 0.020 265);
+  --rule-faint:       oklch(24% 0.014 265);
+
+  /* Indigo lifts to periwinkle in the dark so it stays legible on graphite. */
+  --accent:           oklch(74% 0.145 278);
+  --accent-hover:     oklch(81% 0.135 279);
+  --accent-soft:      oklch(30% 0.075 276);
+  --accent-rule:      oklch(42% 0.105 276);
+  --accent-ink:       oklch(85% 0.105 279);
+
+  --signal-pos:       oklch(76% 0.150 152);
+  --signal-pos-soft:  oklch(27% 0.055 154);
+  --signal-pos-rule:  oklch(38% 0.075 153);
+
+  --signal-warn:      oklch(80% 0.145 70);
+  --signal-warn-soft: oklch(29% 0.060 64);
+  --signal-warn-rule: oklch(41% 0.080 66);
+
+  --signal-neg:       oklch(71% 0.170 22);
+  --signal-neg-soft:  oklch(29% 0.075 21);
+  --signal-neg-rule:  oklch(41% 0.105 21);
+
+  --signal-info:      oklch(75% 0.115 232);
+  --signal-info-soft: oklch(27% 0.058 234);
+  --signal-info-rule: oklch(39% 0.080 233);
+
+  --signal-alt:       oklch(76% 0.140 320);
+  --signal-alt-soft:  oklch(29% 0.070 320);
+  --signal-alt-rule:  oklch(41% 0.095 320);
+
+
+  --tone-neutral-soft: oklch(24% 0.014 265);
+  --tone-neutral-rule: oklch(33% 0.018 265);
+  --tone-neutral-ink:  oklch(76% 0.012 265);
+
+  --tone-accent-soft: var(--accent-soft);
+  --tone-accent-rule: var(--accent-rule);
+  --tone-accent-ink:  var(--accent-ink);
+
+  --tone-pos-soft: var(--signal-pos-soft);
+  --tone-pos-rule: var(--signal-pos-rule);
+  --tone-pos-ink:  oklch(85% 0.125 152);
+
+  --tone-warn-soft: var(--signal-warn-soft);
+  --tone-warn-rule: var(--signal-warn-rule);
+  --tone-warn-ink:  oklch(88% 0.120 70);
+
+  --tone-neg-soft: var(--signal-neg-soft);
+  --tone-neg-rule: var(--signal-neg-rule);
+  --tone-neg-ink:  oklch(81% 0.135 22);
+
+  --tone-info-soft: var(--signal-info-soft);
+  --tone-info-rule: var(--signal-info-rule);
+  --tone-info-ink:  oklch(85% 0.090 232);
+
+  --tone-alt-soft: var(--signal-alt-soft);
+  --tone-alt-rule: var(--signal-alt-rule);
+  --tone-alt-ink:  oklch(86% 0.110 320);
+
+  --on-signal: oklch(16% 0.020 266);
+  --knob: oklch(97% 0.004 265);
+
+  --lift-flat:  0 1px 1px -0.5px oklch(0% 0 0 / 0.30);
+  --lift-card:  0 1px 2px -1px oklch(0% 0 0 / 0.45),
+                0 2px 6px -2px oklch(0% 0 0 / 0.35);
+  --lift-float: 0 2px 4px -2px oklch(0% 0 0 / 0.50),
+                0 8px 20px -6px oklch(0% 0 0 / 0.45);
+  --lift-modal: 0 8px 16px -8px oklch(0% 0 0 / 0.55),
+                0 24px 56px -16px oklch(0% 0 0 / 0.60);
+}
+
+/* ── Tailwind palette remap ──────────────────────────────────────────────────
+   Pages are written against slate/red/green/… utilities. Rather than rewrite
+   every class, the palette itself is redefined so stock utilities resolve to
+   the design tokens above. This keeps page markup legible and makes the system
+   the single source of truth: change a token, the whole app moves.
+   ─────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-slate-50:  var(--paper-sunken);
+  --color-slate-100: var(--paper-hover);
+  --color-slate-200: var(--rule);
+  --color-slate-300: var(--rule-strong);
+  --color-slate-400: var(--ink-faint);
+  --color-slate-500: var(--ink-muted);
+  --color-slate-600: var(--ink-muted);
+  --color-slate-700: var(--ink-secondary);
+  --color-slate-800: var(--ink);
+  --color-slate-900: var(--ink);
+  --color-slate-950: var(--ink);
+
+  --color-red-50:  var(--signal-neg-soft);
+  --color-red-200: var(--signal-neg-rule);
+  --color-red-600: var(--signal-neg);
+  --color-red-700: var(--signal-neg);
+  --color-red-800: var(--signal-neg);
+
+  --color-green-50:  var(--signal-pos-soft);
+  --color-green-200: var(--signal-pos-rule);
+  --color-green-600: var(--signal-pos);
+  --color-green-700: var(--signal-pos);
+
+  --color-amber-50:  var(--signal-warn-soft);
+  --color-amber-200: var(--signal-warn-rule);
+  --color-amber-300: var(--signal-warn-rule);
+  --color-amber-700: var(--signal-warn);
+  --color-amber-800: var(--signal-warn);
+
+  --color-blue-50:  var(--signal-info-soft);
+  --color-blue-200: var(--signal-info-rule);
+  --color-blue-600: var(--accent);
+  --color-blue-700: var(--signal-info);
+
+  --color-violet-50:  var(--signal-alt-soft);
+  --color-violet-200: var(--signal-alt-rule);
+  --color-violet-700: var(--signal-alt);
+
+  --color-sky-50:  var(--signal-info-soft);
+  --color-sky-200: var(--signal-info-rule);
+  --color-sky-700: var(--signal-info);
+}
+
+/* ═══ Base ═══════════════════════════════════════════════════════════════ */
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
+  background: var(--paper);
+  color: var(--ink-secondary);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  /* Inter's optical sizing + contextual alternates; tabular figures are opted
+     into per-element so prose keeps proportional numerals. */
+  font-feature-settings: 'cv05' 1, 'cv11' 1, 'ss03' 1;
+  letter-spacing: -0.006em;
 }
 
-/*
- * Dark mode: the app uses Tailwind palette classes (slate/red/amber/...) everywhere,
- * so the palette is inverted under .dark (50<->950, 100<->900, ...). Solid, white-text
- * buttons are pinned back to their light-mode shades below.
- */
-.dark {
-  color-scheme: dark;
-  --color-slate-50: oklch(14.5% 0 none);
-  --color-slate-100: oklch(20.5% 0 none);
-  --color-slate-200: oklch(26.9% 0 none);
-  --color-slate-300: oklch(37.1% 0 none);
-  --color-slate-400: oklch(55.6% 0 none);
-  --color-slate-500: oklch(70.8% 0 none);
-  --color-slate-600: oklch(70.8% 0 none);
-  --color-slate-700: oklch(87% 0 none);
-  --color-slate-800: oklch(92.2% 0 none);
-  --color-slate-900: oklch(97% 0 none);
-  --color-slate-950: oklch(98.5% 0 none);
-  --color-red-50: oklch(25.8% 0.092 26.042);
-  --color-red-100: oklch(39.6% 0.141 25.723);
-  --color-red-200: oklch(44.4% 0.177 26.899);
-  --color-red-300: oklch(50.5% 0.213 27.518);
-  --color-red-400: oklch(63.7% 0.237 25.331);
-  --color-red-500: oklch(70.4% 0.191 22.216);
-  --color-red-600: oklch(70.4% 0.191 22.216);
-  --color-red-700: oklch(80.8% 0.114 19.571);
-  --color-red-800: oklch(88.5% 0.062 18.334);
-  --color-red-900: oklch(93.6% 0.032 17.717);
-  --color-red-950: oklch(97.1% 0.013 17.38);
-  --color-amber-50: oklch(27.9% 0.077 45.635);
-  --color-amber-100: oklch(41.4% 0.112 45.904);
-  --color-amber-200: oklch(47.3% 0.137 46.201);
-  --color-amber-300: oklch(55.5% 0.163 48.998);
-  --color-amber-400: oklch(76.9% 0.188 70.08);
-  --color-amber-500: oklch(82.8% 0.189 84.429);
-  --color-amber-600: oklch(82.8% 0.189 84.429);
-  --color-amber-700: oklch(87.9% 0.169 91.605);
-  --color-amber-800: oklch(92.4% 0.12 95.746);
-  --color-amber-900: oklch(96.2% 0.059 95.617);
-  --color-amber-950: oklch(98.7% 0.022 95.277);
-  --color-green-50: oklch(26.6% 0.065 152.934);
-  --color-green-100: oklch(39.3% 0.095 152.535);
-  --color-green-200: oklch(44.8% 0.119 151.328);
-  --color-green-300: oklch(52.7% 0.154 150.069);
-  --color-green-400: oklch(72.3% 0.219 149.579);
-  --color-green-500: oklch(79.2% 0.209 151.711);
-  --color-green-600: oklch(79.2% 0.209 151.711);
-  --color-green-700: oklch(87.1% 0.15 154.449);
-  --color-green-800: oklch(92.5% 0.084 155.995);
-  --color-green-900: oklch(96.2% 0.044 156.743);
-  --color-green-950: oklch(98.2% 0.018 155.826);
-  --color-blue-50: oklch(28.2% 0.091 267.935);
-  --color-blue-100: oklch(37.9% 0.146 265.522);
-  --color-blue-200: oklch(42.4% 0.199 265.638);
-  --color-blue-300: oklch(48.8% 0.243 264.376);
-  --color-blue-400: oklch(62.3% 0.214 259.815);
-  --color-blue-500: oklch(70.7% 0.165 254.624);
-  --color-blue-600: oklch(70.7% 0.165 254.624);
-  --color-blue-700: oklch(80.9% 0.105 251.813);
-  --color-blue-800: oklch(88.2% 0.059 254.128);
-  --color-blue-900: oklch(93.2% 0.032 255.585);
-  --color-blue-950: oklch(97% 0.014 254.604);
-  --color-violet-50: oklch(28.3% 0.141 291.089);
-  --color-violet-100: oklch(38% 0.189 293.745);
-  --color-violet-200: oklch(43.2% 0.232 292.759);
-  --color-violet-300: oklch(49.1% 0.27 292.581);
-  --color-violet-400: oklch(60.6% 0.25 292.717);
-  --color-violet-500: oklch(70.2% 0.183 293.541);
-  --color-violet-600: oklch(70.2% 0.183 293.541);
-  --color-violet-700: oklch(81.1% 0.111 293.571);
-  --color-violet-800: oklch(89.4% 0.057 293.283);
-  --color-violet-900: oklch(94.3% 0.029 294.588);
-  --color-violet-950: oklch(96.9% 0.016 293.756);
-  --color-sky-50: oklch(29.3% 0.066 243.157);
-  --color-sky-100: oklch(39.1% 0.09 240.876);
-  --color-sky-200: oklch(44.3% 0.11 240.79);
-  --color-sky-300: oklch(50% 0.134 242.749);
-  --color-sky-400: oklch(68.5% 0.169 237.323);
-  --color-sky-500: oklch(74.6% 0.16 232.661);
-  --color-sky-600: oklch(74.6% 0.16 232.661);
-  --color-sky-700: oklch(82.8% 0.111 230.318);
-  --color-sky-800: oklch(90.1% 0.058 230.902);
-  --color-sky-900: oklch(95.1% 0.026 236.824);
-  --color-sky-950: oklch(97.7% 0.013 236.62);
-  --color-indigo-50: oklch(25.7% 0.09 281.288);
-  --color-indigo-100: oklch(35.9% 0.144 278.697);
-  --color-indigo-200: oklch(39.8% 0.195 277.366);
-  --color-indigo-300: oklch(45.7% 0.24 277.023);
-  --color-indigo-400: oklch(58.5% 0.233 277.117);
-  --color-indigo-500: oklch(67.3% 0.182 276.935);
-  --color-indigo-600: oklch(67.3% 0.182 276.935);
-  --color-indigo-700: oklch(78.5% 0.115 274.713);
-  --color-indigo-800: oklch(87% 0.065 274.039);
-  --color-indigo-900: oklch(93% 0.034 272.788);
-  --color-indigo-950: oklch(96.2% 0.018 272.314);
-  --color-emerald-50: oklch(26.2% 0.051 172.552);
-  --color-emerald-100: oklch(37.8% 0.077 168.94);
-  --color-emerald-200: oklch(43.2% 0.095 166.913);
-  --color-emerald-300: oklch(50.8% 0.118 165.612);
-  --color-emerald-400: oklch(69.6% 0.17 162.48);
-  --color-emerald-500: oklch(76.5% 0.177 163.223);
-  --color-emerald-600: oklch(76.5% 0.177 163.223);
-  --color-emerald-700: oklch(84.5% 0.143 164.978);
-  --color-emerald-800: oklch(90.5% 0.093 164.15);
-  --color-emerald-900: oklch(95% 0.052 163.051);
-  --color-emerald-950: oklch(97.9% 0.021 166.113);
+/* Fraunces at display sizes: the soft optical axis and low weight-contrast
+   keep it editorial rather than decorative. */
+h1, h2, h3, .display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  color: var(--ink);
+  letter-spacing: -0.018em;
+  font-variation-settings: 'SOFT' 20, 'WONK' 0, 'opsz' 36;
 }
 
-.dark .bg-white { background-color: oklch(20.5% 0 none); }
-.dark .bg-black\/50 { background-color: rgb(0 0 0 / 0.7); }
+code, pre, .mono, .tabular {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-feature-settings: 'zero' 1, 'ss02' 1;
+}
 
-/* Primary buttons (bg-slate-800 + white text) become indigo in dark mode */
-.dark .bg-slate-800 { background-color: #4f46e5; }
-.dark .border-slate-800 { border-color: #4f46e5; }
-.dark .hover\:bg-slate-700:hover { background-color: #6366f1; }
+/* Numbers in tables must align vertically — always. */
+table, .tabular-nums, [class*='tabular'] {
+  font-variant-numeric: tabular-nums;
+}
 
-/* Solid colored fills keep their original (light-mode) shade so white text stays readable */
-.dark .bg-violet-600 { background-color: #7c3aed; }
-.dark .bg-violet-700, .dark .hover\:bg-violet-700:hover { background-color: #6d28d9; }
-.dark .bg-green-700 { background-color: #15803d; }
-.dark .bg-green-600, .dark .hover\:bg-green-600:hover { background-color: #16a34a; }
-.dark .bg-green-500 { background-color: #22c55e; }
-.dark .bg-red-600 { background-color: #dc2626; }
-.dark .bg-red-500, .dark .hover\:bg-red-500:hover { background-color: #ef4444; }
-.dark .bg-blue-600 { background-color: #2563eb; }
-.dark .bg-blue-500 { background-color: #3b82f6; }
-.dark .bg-amber-500 { background-color: #f59e0b; }
-.dark .bg-amber-400 { background-color: #fbbf24; }
-.dark .text-amber-900 { color: #78350f; }
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
 
-/* Global ultra-slim scrollbars. Chrome ignores ::-webkit-scrollbar when scrollbar-width is set,
-   so the standard properties are only used by browsers without webkit scrollbar support (Firefox). */
+/* ═══ Component primitives ═══════════════════════════════════════════════
+   Utility classes used across pages so the vocabulary stays consistent and a
+   refinement lands everywhere at once.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Surface: the card. Hairline + soft lift, never a hard grey box. ────── */
+.surface {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift-card);
+}
+
+.surface-flat {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--lift-flat);
+}
+
+/* ── Section head: small caps label with a counter, sitting on sunken paper */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8125rem 1.125rem;
+  border-bottom: 1px solid var(--rule-faint);
+  background: linear-gradient(to bottom,
+    color-mix(in oklab, var(--paper-sunken) 55%, transparent),
+    transparent);
+}
+
+.eyebrow {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  font-feature-settings: 'cv05' 1;
+}
+
+.counter {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--paper-sunken);
+  border: 1px solid var(--rule-faint);
+  border-radius: 999px;
+  padding: 0.0625rem 0.4375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Table: the densest surface in the app, so it gets the most care. ───── */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--paper-sunken);
+  padding: 0.6875rem 1.125rem;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  /* Hairline drawn as inset shadow so it survives sticky positioning. */
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+.data-table tbody td {
+  padding: 0.8125rem 1.125rem;
+  border-bottom: 1px solid var(--rule-faint);
+  color: var(--ink-secondary);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tbody tr {
+  transition: background-color 110ms ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--paper-hover);
+}
+
+/* ── Badge: a pill that reads as a printed stamp, not a coloured rectangle. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.1875rem 0.5625rem;
+  font-size: 11.5px;
+  font-weight: 550;
+  line-height: 1.45;
+  letter-spacing: 0.002em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+/* The dot does the colour work, so the pill stays quiet at table density. */
+.badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: none;
+  opacity: 0.85;
+}
+
+/* ── Controls ───────────────────────────────────────────────────────────── */
+.field {
+  height: 2.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  padding: 0 0.75rem;
+  font-size: 13.5px;
+  color: var(--ink);
+  box-shadow: var(--lift-flat);
+  transition: border-color 130ms ease, box-shadow 130ms ease;
+}
+
+.field::placeholder { color: var(--ink-faint); }
+
+/* Chrome draws its own magnifier/clear decorations inside type="search",
+   which collide with the icon we position in the padding. Strip them. */
+.field[type='search']::-webkit-search-decoration,
+.field[type='search']::-webkit-search-cancel-button,
+.field[type='search']::-webkit-search-results-button,
+.field[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Number inputs: hide spinners so the field keeps a clean edge. */
+.field[type='number']::-webkit-outer-spin-button,
+.field[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+.field[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
+.field:hover { border-color: var(--rule-strong); }
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  height: 2.25rem;
+  padding: 0 0.9375rem;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.002em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease,
+              box-shadow 130ms ease, transform 60ms ease;
+}
+
+.btn:active:not(:disabled) { transform: translateY(0.5px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Primary: solid ink in light mode, so amber stays reserved for signal.
+   The inset top highlight is what separates a crafted button from a flat fill. */
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  box-shadow: var(--lift-flat),
+              inset 0 1px 0 color-mix(in oklab, white 14%, transparent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--ink) 88%, var(--accent));
+  border-color: color-mix(in oklab, var(--ink) 88%, var(--accent));
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: var(--on-signal);
+  border: 1px solid var(--accent);
+  box-shadow: var(--lift-flat),
+              inset 0 1px 0 color-mix(in oklab, white 18%, transparent);
+}
+.btn-accent:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-quiet {
+  background: var(--paper-raised);
+  color: var(--ink-secondary);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-flat);
+}
+.btn-quiet:hover:not(:disabled) {
+  background: var(--paper-hover);
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--paper-hover);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--signal-neg);
+  color: var(--on-signal);
+  border: 1px solid var(--signal-neg);
+  box-shadow: var(--lift-flat),
+              inset 0 1px 0 color-mix(in oklab, white 16%, transparent);
+}
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.dark .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-signal); }
+.dark .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+/* btn-accent / btn-danger already use --on-signal, which flips on its own. */
+
+/* ── Page shell: one consistent rhythm for every screen ─────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  /* Reading measure — keeps wide monitors from stretching forms to 2000px
+     while leaving data tables free to use the room. */
+  max-width: 1600px;
+  width: 100%;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-lede {
+  margin-top: 0.3125rem;
+  font-size: 13px;
+  color: var(--ink-muted);
+  max-width: 68ch;
+}
+
+/* ── Layout grid ─────────────────────────────────────────────────────────
+   A 12-column grid for page content. Sections declare their own span with
+   .span-* so the arrangement is explicit, instead of relying on source order
+   and auto-placement. Single column below 1024px, where side-by-side forms
+   stop being readable.
+   ─────────────────────────────────────────────────────────────────────── */
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* Below lg everything is full width. */
+.span-4, .span-5, .span-6, .span-7, .span-8, .span-12 { grid-column: span 12; }
+
+@media (min-width: 1024px) {
+  .span-4  { grid-column: span 5; }
+  .span-5  { grid-column: span 5; }
+  .span-6  { grid-column: span 6; }
+  .span-7  { grid-column: span 7; }
+  .span-8  { grid-column: span 7; }
+  .span-12 { grid-column: span 12; }
+}
+
+@media (min-width: 1440px) {
+  .span-4  { grid-column: span 4; }
+  .span-5  { grid-column: span 5; }
+  .span-6  { grid-column: span 6; }
+  .span-7  { grid-column: span 7; }
+  .span-8  { grid-column: span 8; }
+}
+
+/* A section that should fill the height of its grid row, so two cards sitting
+   side by side end flush instead of one stopping short. */
+.span-stretch { align-self: stretch; }
+.span-stretch > * { height: 100%; }
+
+/* ── Card: a surface with interior padding already applied ──────────────── */
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift-card);
+  padding: 1.25rem;
+}
+
+/* Lifts toward the viewer on hover. Used for anything clickable that is a
+   whole block rather than a line of text. */
+.card-interactive {
+  transition: box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 180ms ease,
+              transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-interactive:hover {
+  border-color: var(--rule-strong);
+  box-shadow: var(--lift-float);
+  transform: translateY(-1px);
+}
+
+/* ── Segmented control ──────────────────────────────────────────────────── */
+.segmented {
+  display: inline-flex;
+  gap: 0.1875rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--paper-sunken);
+  border: 1px solid var(--rule-faint);
+}
+
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  border-radius: var(--radius);
+  padding: 0.4375rem 0.875rem;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.segmented button:hover { color: var(--ink); }
+
+.segmented button[aria-selected='true'] {
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--lift-flat);
+}
+
+/* ── Switch ─────────────────────────────────────────────────────────────── */
+.switch {
+  position: relative;
+  flex: none;
+  width: 2.125rem;
+  height: 1.1875rem;
+  border-radius: 999px;
+  background: var(--rule-strong);
+  transition: background-color 180ms ease;
+  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--ink) 14%, transparent);
+  cursor: pointer;
+}
+
+.switch[data-on='true'] { background: var(--signal-pos); }
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.9375rem;
+  height: 0.9375rem;
+  border-radius: 999px;
+  background: var(--knob);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 30%, transparent);
+  transition: translate 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.switch[data-on='true']::after { translate: 0.9375rem 0; }
+
+.switch:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Links ──────────────────────────────────────────────────────────────── */
+.link {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 28%, transparent);
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 130ms ease, color 130ms ease;
+}
+.link:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* A lead name in a table: ink until hovered, then amber. Underline only on
+   hover keeps dense tables from looking like a wall of links. */
+.link-subtle {
+  color: var(--ink);
+  font-weight: 550;
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+.link-subtle:hover { color: var(--accent); }
+
+/* ── Page header: the serif title + rule that sets the editorial tone ───── */
+.page-title {
+  font-family: var(--font-fraunces), serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 20, 'opsz' 24;
+}
+
+/* Hairline that fades out — a printed rule, not a border. */
+.rule-fade {
+  height: 1px;
+  background: linear-gradient(to right, var(--rule), transparent);
+  border: 0;
+}
+
+/* ── Stat figure: large tabular numeral in the display face ─────────────── */
+.stat-figure {
+  font-family: var(--font-fraunces), serif;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'SOFT' 10, 'opsz' 40;
+}
+
+/* ── Nav ────────────────────────────────────────────────────────────────── */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  border-radius: var(--radius);
+  padding: 0.5rem 0.625rem;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nav-item:hover {
+  background: var(--paper-hover);
+  color: var(--ink);
+}
+
+.nav-item[aria-current='page'] {
+  background: var(--paper-hover);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Active marker: a short amber bar at the left edge. One small signal of
+   place, instead of flooding the item with colour. */
+.nav-item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  left: -0.5rem;
+  top: 50%;
+  translate: 0 -50%;
+  width: 2.5px;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* ── Wordmark: letterspaced caps with the dot of the "i" in amber ───────── */
+.wordmark {
+  font-family: var(--font-fraunces), serif;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.26em;
+  color: var(--ink);
+  font-variation-settings: 'SOFT' 0, 'WONK' 1, 'opsz' 14;
+}
+
+/* ═══ Chrome ═════════════════════════════════════════════════════════════ */
+
+/* Slim scrollbars that pick up the warm neutrals. Chrome ignores
+   ::-webkit-scrollbar when scrollbar-width is set, so the standard properties
+   are scoped to browsers without webkit scrollbar support (Firefox). */
 @supports not selector(::-webkit-scrollbar) {
-  * { scrollbar-width: thin; scrollbar-color: var(--color-slate-300) transparent; }
+  * { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
 }
-*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--color-slate-400) 55%, transparent); border-radius: 9999px; }
-*::-webkit-scrollbar-thumb:hover { background: var(--color-slate-400); }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--ink-faint) 42%, transparent);
+  border-radius: 999px;
+  border: 2.5px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--ink-muted) 62%, transparent);
+  background-clip: content-box;
+}
 *::-webkit-scrollbar-corner { background: transparent; }
 
 /* Visible keyboard focus everywhere (mouse clicks stay clean). */
-:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
 
+/* ═══ Motion ═════════════════════════════════════════════════════════════ */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Content settles in rather than snapping. Short enough not to feel slow. */
+.rise { animation: rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes shimmer {
+  from { background-position: -180% 0; }
+  to   { background-position: 180% 0; }
+}
+
+/* Skeletons sweep instead of pulsing — reads as loading, not as broken. */
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--paper-sunken) 36%,
+    var(--paper-hover) 50%,
+    var(--paper-sunken) 64%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

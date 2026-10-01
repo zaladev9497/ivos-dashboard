@@ -1,4 +1,5 @@
 import TimelineEntry from './TimelineEntry'
+import EmptyState from '@/components/EmptyState'
 import { formatDayHeading, templateLabel } from '@/lib/utils'
 
 // ─── Human labels ──────────────────────────────────────────────────────────────
@@ -123,12 +124,12 @@ function buildTimeline({
 
   // ── Add journey events ─────────────────────────────────────────────────────────
   for (const e of journeyEvents) {
-    let icon = '◆', iconColor = 'text-blue-500'
-    if (e.event_type === 'journey_held') { icon = '⏸'; iconColor = 'text-amber-500' }
-    if (e.event_type === 'journey_started') { icon = '▶'; iconColor = 'text-blue-500' }
-    if (e.event_type === 'lead_ingested') { icon = '●'; iconColor = 'text-slate-400' }
-    if (e.event_type === 'brief_written' || e.event_type === 'note_written') { icon = '✍'; iconColor = 'text-slate-500' }
-    if (e.event_type === 'task_created') { icon = '☑'; iconColor = 'text-indigo-500' }
+    let kind = 'event', tone = 'info'
+    if (e.event_type === 'journey_held') { kind = 'paused'; tone = 'warn' }
+    if (e.event_type === 'journey_started') { kind = 'started'; tone = 'info' }
+    if (e.event_type === 'lead_ingested') { kind = 'dot'; tone = 'neutral' }
+    if (e.event_type === 'brief_written' || e.event_type === 'note_written') { kind = 'note'; tone = 'neutral' }
+    if (e.event_type === 'task_created') { kind = 'task'; tone = 'alt' }
 
     const p = e.payload ?? {}
     let summary = null
@@ -144,7 +145,7 @@ function buildTimeline({
     items.push({
       id: `je-${e.id}`, ts: e.occurred_at, upcoming: false,
       type: 'journey_event', rawKey: e.event_type,
-      icon, iconColor,
+      kind, tone,
       title: humanEventLabel(e.event_type),
       summary,
       payload: e.payload,
@@ -159,7 +160,7 @@ function buildTimeline({
     items.push({
       id: `le-${e.id}`, ts: e.occurred_at, upcoming: false,
       type: 'lead_event', rawKey: e.event_type,
-      icon: '◆', iconColor: 'text-slate-400',
+      kind: 'event', tone: 'neutral',
       title: humanEventLabel(e.event_type),
       summary: e.payload?.reason ?? null,
       payload: e.payload,
@@ -183,8 +184,8 @@ function buildTimeline({
     items.push({
       id: `msg-${m.id}`, ts: m.sent_at, upcoming: false,
       type: 'message', rawKey: m.purpose ?? m.direction,
-      icon: isInbound ? '←' : '→',
-      iconColor: isInbound ? 'text-violet-500' : isFailed ? 'text-red-400' : 'text-sky-500',
+      kind: isInbound ? 'inbound' : isFailed ? 'failed' : 'outbound',
+      tone: isInbound ? 'alt' : isFailed ? 'neg' : 'info',
       title: isInbound ? 'Customer replied' : 'SMS sent',
       summary,
       body: isInbound || (!isRedirected && !isFailed) ? body : null,
@@ -209,7 +210,7 @@ function buildTimeline({
       items.push({
         id: `sched-${sm.id}`, ts: sm.scheduled_for, upcoming: true,
         type: 'scheduled_upcoming', rawKey: sm.template_key,
-        icon: '◷', iconColor: isDemo ? 'text-violet-400' : 'text-blue-400',
+        kind: 'scheduled', tone: isDemo ? 'alt' : 'info',
         title,
         summary: sm.channel === 'sms' ? 'Scheduled SMS' : `Scheduled ${sm.channel}`,
         status: sm.state,
@@ -225,10 +226,10 @@ function buildTimeline({
     const isCancelled = sm.state === 'cancelled'
     const isRedirected = mergedMsg && (mergedMsg.is_test || !!(mergedMsg.error_message?.startsWith('REDIRECTED')))
 
-    let icon = '–', iconColor = 'text-slate-400'
-    if (isSent && !isRedirected) { icon = '✓'; iconColor = 'text-green-500' }
-    if (isSent && isRedirected) { icon = '→'; iconColor = 'text-amber-500' }
-    if (isFailed) { icon = '✕'; iconColor = 'text-red-500' }
+    let kind = 'dot', tone = 'neutral'
+    if (isSent && !isRedirected) { kind = 'sent'; tone = 'pos' }
+    if (isSent && isRedirected) { kind = 'outbound'; tone = 'warn' }
+    if (isFailed) { kind = 'failed'; tone = 'neg' }
 
     let entryTitle = title
     if (isSuppressed) entryTitle = `Suppressed: ${title}`
@@ -245,7 +246,7 @@ function buildTimeline({
       ts: sm.last_attempt_at ?? sm.scheduled_for,
       upcoming: false,
       type: 'scheduled_past', rawKey: sm.template_key,
-      icon, iconColor,
+      kind, tone,
       title: entryTitle,
       summary,
       body: isSent && !isRedirected ? body : null,
@@ -260,8 +261,8 @@ function buildTimeline({
     items.push({
       id: `exc-${e.id}`, ts: e.first_seen_at, upcoming: false,
       type: 'exception', rawKey: e.exception_type,
-      icon: '!',
-      iconColor: e.severity === 'high' ? 'text-red-600' : e.severity === 'medium' ? 'text-amber-600' : 'text-blue-600',
+      kind: 'alert',
+      tone: e.severity === 'high' ? 'neg' : e.severity === 'medium' ? 'warn' : 'info',
       title: `Exception: ${e.exception_type.replace(/_/g, ' ')}`,
       summary: e.summary,
       status: e.severity,
@@ -276,7 +277,7 @@ function buildTimeline({
     items.push({
       id: `gh-${e.id}`, ts: e.occurred_at, upcoming: false,
       type: 'glasshouse', rawKey: e.event_type ?? 'glasshouse',
-      icon: '◉', iconColor: 'text-emerald-500',
+      kind: 'signal', tone: 'pos',
       title: `GlassHouse: ${(e.event_type ?? 'event').replace(/_/g, ' ')}`,
       summary: lastMsg?.displayContent ? lastMsg.displayContent.slice(0, 80) : null,
       ghConversation: conv,
@@ -288,7 +289,7 @@ function buildTimeline({
     items.push({
       id: `ghp-${ghPromotion.id}`, ts: ghPromotion.created_at, upcoming: false,
       type: 'glasshouse_promotion', rawKey: 'glasshouse_promotion',
-      icon: '◉', iconColor: 'text-emerald-600',
+      kind: 'signal', tone: 'pos',
       title: `GlassHouse promotion`,
       summary: `Status: ${ghPromotion.status} · Jobber request: ${ghPromotion.jobber_request_id ?? '—'}`,
       status: ghPromotion.status,
@@ -301,7 +302,7 @@ function buildTimeline({
     items.push({
       id: `nco-${o.id}`, ts: o.first_seen_at, upcoming: false,
       type: 'nc_order', rawKey: 'nc_order',
-      icon: '▣', iconColor: 'text-indigo-500',
+      kind: 'order', tone: 'alt',
       title: `Order placed: ${o.order_type}`,
       summary: `#${o.order_number} · ${o.supplier}`,
     })
@@ -319,36 +320,62 @@ export default function Timeline(props) {
   const dayGroups = groupByDay(past)
 
   return (
-    <div className="space-y-1.5">
-      {/* Upcoming */}
+    <div className="space-y-4">
+      {/* Upcoming — tinted so what has not happened yet is visually separate
+          from the record of what has. */}
       {upcoming.length > 0 && (
-        <div className="rounded-md border border-blue-100 bg-blue-50 overflow-hidden">
-          <div className="border-b border-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 uppercase tracking-wide">
-            Upcoming ({upcoming.length})
+        <section
+          className="overflow-hidden rounded-[11px] border"
+          style={{ borderColor: 'var(--signal-info-rule)', background: 'var(--signal-info-soft)' }}
+        >
+          <div
+            className="flex items-center justify-between border-b px-5 py-3"
+            style={{ borderColor: 'var(--signal-info-rule)' }}
+          >
+            <span className="eyebrow" style={{ color: 'var(--tone-info-ink)' }}>Upcoming</span>
+            <span
+              className="counter"
+              style={{ background: 'transparent', borderColor: 'var(--signal-info-rule)', color: 'var(--tone-info-ink)' }}
+            >
+              {upcoming.length}
+            </span>
           </div>
-          <div className="px-4 py-2 divide-y divide-blue-100">
+          <div className="px-5 py-2">
             {upcoming.map(item => (
               <TimelineEntry key={item.id} item={item} showDate />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Past timeline grouped by day */}
-      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-          Timeline{past.length > 0 ? ` (${past.length})` : ''}
+      {/* Past, grouped by day */}
+      <section className="surface overflow-hidden">
+        <div className="section-head">
+          <span className="eyebrow">Timeline</span>
+          {past.length > 0 && <span className="counter">{past.length}</span>}
         </div>
         {past.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">No activity yet.</p>
+          <EmptyState title="No activity yet" description="Events appear here as the journey progresses." />
         ) : (
           dayGroups.map(({ key, items: dayItems }) => (
             <div key={key}>
-              <div className="bg-slate-50 border-y border-slate-100 px-4 py-1.5">
-                <span className="text-xs font-semibold text-slate-400">{key}</span>
+              {/* Day band — sticky, so the date stays with the rows while scrolling. */}
+              <div
+                className="sticky top-0 z-10 border-y px-5 py-2 backdrop-blur-sm"
+                style={{
+                  borderColor: 'var(--rule-faint)',
+                  background: 'color-mix(in oklab, var(--paper-sunken) 88%, transparent)',
+                }}
+              >
+                <span className="eyebrow">{key}</span>
               </div>
-              <div className="px-4 py-2 relative">
-                <div className="absolute left-7 top-0 bottom-0 w-px bg-slate-100" />
+              <div className="relative px-5 py-2">
+                {/* The spine, inset to pass through the centre of each icon disc. */}
+                <div
+                  className="absolute bottom-3 left-[25px] top-3 w-px"
+                  style={{ background: 'var(--rule-faint)' }}
+                  aria-hidden="true"
+                />
                 {dayItems.map(item => (
                   <TimelineEntry key={item.id} item={item} />
                 ))}
@@ -356,7 +383,7 @@ export default function Timeline(props) {
             </div>
           ))
         )}
-      </div>
+      </section>
     </div>
   )
 }

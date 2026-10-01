@@ -21,11 +21,18 @@ export default function RetryButton({ id }) {
       <button
         onClick={handleRetry}
         disabled={saving}
-        className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-40"
+        className="btn h-6 px-2 text-[11px]"
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--signal-info-rule)',
+          color: 'var(--tone-info-ink)',
+        }}
       >
         {saving ? '…' : 'Retry'}
       </button>
-      {error && <p className="text-xs text-red-600 mt-0.5">{error}</p>}
+      {error && (
+        <p className="mt-0.5 text-[11px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
+      )}
     </div>
   )
 }

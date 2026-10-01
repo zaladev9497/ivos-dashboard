@@ -1,360 +1,678 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { updateBusinessCalendar } from './actions'
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-const DAY_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' }
+// working_days is an integer[] of ISO weekdays in Postgres: 1 = Monday ... 7 = Sunday.
+const DAYS = [
+  { n: 1, label: 'Mon', full: 'Monday' },
+  { n: 2, label: 'Tue', full: 'Tuesday' },
+  { n: 3, label: 'Wed', full: 'Wednesday' },
+  { n: 4, label: 'Thu', full: 'Thursday' },
+  { n: 5, label: 'Fri', full: 'Friday' },
+  { n: 6, label: 'Sat', full: 'Saturday' },
+  { n: 7, label: 'Sun', full: 'Sunday' },
+]
 
-// Sections with their fields
-// dangerous = requires confirmation dialog before saving
+// Mirrors the server's FIELD_RULES in app/settings/actions.js. Kept in sync so
+// the form can block an invalid save locally instead of round-tripping to a
+// rejection — the old UI allowed 1–3600s here while the server only accepts
+// 5–300, so bad values failed silently after a request.
+const LIMITS = {
+  quoteValidityDays: { min: 1, max: 365 },
+  demoPollInterval: { min: 5, max: 300 },
+}
 
-function Field({ label, hint, children }) {
+// Postgres `time` columns come back as "08:00:00"; <input type="time"> wants "HH:MM".
+const toTimeInput = (t) => (typeof t === 'string' ? t.slice(0, 5) : '')
+
+const COMMON_TZ = [
+  'America/Chicago', 'America/New_York', 'America/Denver', 'America/Los_Angeles',
+  'America/Phoenix', 'America/Anchorage', 'Pacific/Honolulu', 'America/Toronto',
+  'Europe/London', 'UTC',
+]
+
+function isValidTimezone(tz) {
+  if (!tz || typeof tz !== 'string') return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz.trim() })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/* ── Layout primitives ───────────────────────────────────────────────────── */
+
+function Section({ title, description, tone, children, footer, className = '' }) {
+  const danger = tone === 'danger'
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-2 items-start py-3">
-      <div>
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
+    <section
+      className={`surface flex flex-col overflow-hidden ${className}`}
+      style={danger ? { borderColor: 'var(--signal-neg-rule)' } : undefined}
+    >
+      <header
+        className="border-b px-5 py-4"
+        style={{
+          borderColor: danger ? 'var(--signal-neg-rule)' : 'var(--rule-faint)',
+          background: danger ? 'var(--signal-neg-soft)' : 'transparent',
+        }}
+      >
+        <h2
+          className="text-[13.5px] font-semibold"
+          style={{ color: danger ? 'var(--tone-neg-ink)' : 'var(--ink)' }}
+        >
+          {title}
+        </h2>
+        {description && (
+          <p
+            className="mt-1 text-[12px] leading-relaxed"
+            style={{ color: danger ? 'var(--tone-neg-ink)' : 'var(--ink-muted)' }}
+          >
+            {description}
+          </p>
+        )}
+      </header>
+
+      <div className="flex-1 divide-y" style={{ borderColor: 'var(--rule-faint)' }}>
+        {children}
       </div>
-      <div>{children}</div>
+
+      {footer && (
+        <div
+          className="flex flex-wrap items-center gap-3 border-t px-5 py-3.5"
+          style={{ borderColor: 'var(--rule-faint)', background: 'var(--paper-sunken)' }}
+        >
+          {footer}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function Field({ label, hint, htmlFor, error, children }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-6 gap-y-2 px-5 py-4 sm:grid-cols-[minmax(170px,34%)_1fr]">
+      <div>
+        <label
+          htmlFor={htmlFor}
+          className="text-[13px] font-medium"
+          style={{ color: 'var(--ink)' }}
+        >
+          {label}
+        </label>
+        {hint && (
+          <p className="mt-1 text-[11.5px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+            {hint}
+          </p>
+        )}
+      </div>
+      <div className="min-w-0 max-w-xl">
+        {children}
+        {error && (
+          <p className="mt-1.5 text-[11.5px] font-medium" style={{ color: 'var(--tone-neg-ink)' }}>
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
 
+// Per-section status, so you can tell which block saved rather than reading a
+// single page-level banner.
+function SaveState({ state }) {
+  if (!state) return null
+  const ok = state.ok
+  return (
+    <span
+      role="status"
+      className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+      style={{ color: ok ? 'var(--tone-pos-ink)' : 'var(--tone-neg-ink)' }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0" aria-hidden="true">
+        {ok ? <path d="M20 6L9 17l-5-5" /> : <><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5M12 16v.01" /></>}
+      </svg>
+      {ok ? 'Saved' : state.error}
+    </span>
+  )
+}
+
+function Switch({ checked, onChange, disabled, tone = 'pos', label, id }) {
+  return (
+    <button
+      type="button"
+      id={id}
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="switch"
+      data-on={checked}
+      style={checked ? { background: `var(--signal-${tone})` } : undefined}
+    />
+  )
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+
 export default function SettingsForm({ calendar }) {
-  // Regular fields
-  const [timezone, setTimezone] = useState(calendar?.timezone ?? '')
-  const [openTime, setOpenTime] = useState(calendar?.open_time ?? '')
-  const [closeTime, setCloseTime] = useState(calendar?.close_time ?? '')
-  const [quoteValidityDays, setQuoteValidityDays] = useState(calendar?.quote_validity_days ?? 30)
-  const [workingDays, setWorkingDays] = useState(calendar?.working_days ?? [])
+  // Saved baseline — every dirty check compares against this.
+  const saved = {
+    timezone: calendar?.timezone ?? '',
+    openTime: toTimeInput(calendar?.open_time),
+    closeTime: toTimeInput(calendar?.close_time),
+    workingDays: (calendar?.working_days ?? []).map(Number),
+    quoteValidityDays: calendar?.quote_validity_days ?? 30,
+    smsRedirectTo: calendar?.sms_redirect_to ?? '',
+    testOnly: calendar?.test_only ?? false,
+    demoMode: calendar?.demo_mode ?? false,
+    demoPollInterval: calendar?.demo_poll_interval_seconds ?? 10,
+  }
 
-  // Dangerous fields — local staging state
-  const [smsRedirectTo, setSmsRedirectTo] = useState(calendar?.sms_redirect_to ?? '')
-  const [testOnly, setTestOnly] = useState(calendar?.test_only ?? false)
-  const [demoMode, setDemoMode] = useState(calendar?.demo_mode ?? false)
-  const [demoPollInterval, setDemoPollInterval] = useState(calendar?.demo_poll_interval_seconds ?? 10)
+  const [timezone, setTimezone] = useState(saved.timezone)
+  const [openTime, setOpenTime] = useState(saved.openTime)
+  const [closeTime, setCloseTime] = useState(saved.closeTime)
+  const [workingDays, setWorkingDays] = useState(saved.workingDays)
+  const [quoteValidityDays, setQuoteValidityDays] = useState(saved.quoteValidityDays)
+  const [smsRedirectTo, setSmsRedirectTo] = useState(saved.smsRedirectTo)
+  const [testOnly, setTestOnly] = useState(saved.testOnly)
+  const [demoMode, setDemoMode] = useState(saved.demoMode)
+  const [demoPollInterval, setDemoPollInterval] = useState(saved.demoPollInterval)
 
-  const [saving, setSaving] = useState(false)
-  const [result, setResult] = useState(null)
+  // Which section is mid-save, and each section's last result.
+  const [busy, setBusy] = useState(null)
+  const [status, setStatus] = useState({})
+  const [confirm, setConfirm] = useState(null)
 
-  // Confirmation dialog state
-  const [confirm, setConfirm] = useState(null) // { fields, title, message, danger }
+  // Re-sync only when the server's values actually differ.
+  //
+  // revalidatePath() gives this component a NEW `calendar` object after every
+  // save, so depending on [calendar] re-ran this on each one and overwrote the
+  // state we had just set — the Demo toggle flipped on, then immediately snapped
+  // back off. Keying on a signature of the values fixes that, and also stops a
+  // save in one section from wiping unsaved edits in another.
+  const signature = JSON.stringify([
+    saved.timezone, saved.openTime, saved.closeTime, saved.workingDays,
+    saved.quoteValidityDays, saved.smsRedirectTo, saved.testOnly,
+    saved.demoMode, saved.demoPollInterval,
+  ])
+  const lastSignature = useRef(signature)
 
-  function toggleDay(day) {
-    setWorkingDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+  useEffect(() => {
+    if (lastSignature.current === signature) return
+    lastSignature.current = signature
+    setTimezone(saved.timezone)
+    setOpenTime(saved.openTime)
+    setCloseTime(saved.closeTime)
+    setWorkingDays(saved.workingDays)
+    setQuoteValidityDays(saved.quoteValidityDays)
+    setSmsRedirectTo(saved.smsRedirectTo)
+    setTestOnly(saved.testOnly)
+    setDemoMode(saved.demoMode)
+    setDemoPollInterval(saved.demoPollInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature])
+
+  // "Saved" confirmations clear themselves; errors stay until resolved.
+  const timers = useRef({})
+  useEffect(() => {
+    const t = timers.current
+    return () => Object.values(t).forEach(clearTimeout)
+  }, [])
+
+  const doSave = useCallback(async (section, fields) => {
+    setBusy(section)
+    setStatus((s) => ({ ...s, [section]: null }))
+    const res = await updateBusinessCalendar(fields)
+    setBusy(null)
+    setStatus((s) => ({ ...s, [section]: res }))
+    if (res.ok) {
+      clearTimeout(timers.current[section])
+      timers.current[section] = setTimeout(
+        () => setStatus((s) => ({ ...s, [section]: null })),
+        3200
+      )
+    }
+    return res
+  }, [])
+
+  function toggleDay(n) {
+    setWorkingDays((prev) =>
+      prev.includes(n) ? prev.filter((d) => d !== n) : [...prev, n].sort((a, b) => a - b)
     )
   }
 
-  async function doSave(fields) {
-    setSaving(true)
-    setResult(null)
-    const res = await updateBusinessCalendar(fields)
-    setSaving(false)
-    setResult(res)
-    if (res.ok) {
-      // Sync local state with what was saved
-      if ('test_only' in fields) setTestOnly(fields.test_only)
-      if ('sms_redirect_to' in fields) setSmsRedirectTo(fields.sms_redirect_to)
-      if ('demo_mode' in fields) setDemoMode(fields.demo_mode)
-      if ('demo_poll_interval_seconds' in fields) setDemoPollInterval(fields.demo_poll_interval_seconds)
-    }
-  }
+  /* ── Validation (mirrors the server) ───────────────────────────────── */
+  const tzError = timezone.trim() && !isValidTimezone(timezone) ? 'Not a valid IANA timezone name.' : null
+  const hoursError =
+    openTime && closeTime && openTime >= closeTime
+      ? 'Opening time must be earlier than closing time.'
+      : null
+  const daysError = workingDays.length === 0 ? 'Choose at least one working day.' : null
+  const quoteError =
+    !Number.isInteger(Number(quoteValidityDays)) ||
+    quoteValidityDays < LIMITS.quoteValidityDays.min ||
+    quoteValidityDays > LIMITS.quoteValidityDays.max
+      ? `Must be a whole number from ${LIMITS.quoteValidityDays.min} to ${LIMITS.quoteValidityDays.max}.`
+      : null
+  const pollError =
+    !Number.isInteger(Number(demoPollInterval)) ||
+    demoPollInterval < LIMITS.demoPollInterval.min ||
+    demoPollInterval > LIMITS.demoPollInterval.max
+      ? `Must be ${LIMITS.demoPollInterval.min}–${LIMITS.demoPollInterval.max} seconds.`
+      : null
+
+  /* ── Dirty tracking — Save stays disabled until something changes ──── */
+  const sameDays =
+    workingDays.length === saved.workingDays.length &&
+    workingDays.every((d) => saved.workingDays.includes(d))
+  const scheduleDirty =
+    timezone !== saved.timezone ||
+    openTime !== saved.openTime ||
+    closeTime !== saved.closeTime ||
+    !sameDays
+  const quoteDirty = Number(quoteValidityDays) !== Number(saved.quoteValidityDays)
+  const redirectDirty = smsRedirectTo.trim() !== saved.smsRedirectTo
+  const pollDirty = Number(demoPollInterval) !== Number(saved.demoPollInterval)
+
+  const scheduleValid = !tzError && !hoursError && !daysError && !!timezone.trim() && !!openTime && !!closeTime
+
+  /* ── Handlers ──────────────────────────────────────────────────────── */
 
   function handleSaveSchedule() {
-    doSave({ open_time: openTime, close_time: closeTime, working_days: workingDays, timezone })
+    if (!scheduleDirty || !scheduleValid) return
+    doSave('schedule', {
+      timezone: timezone.trim(),
+      open_time: openTime,
+      close_time: closeTime,
+      working_days: workingDays,
+    })
   }
 
-  function handleSaveQuoteValidity() {
-    doSave({ quote_validity_days: Number(quoteValidityDays) })
+  function handleSaveQuote() {
+    if (!quoteDirty || quoteError) return
+    doSave('quote', { quote_validity_days: Number(quoteValidityDays) })
   }
 
-  function handleSmsRedirectChange() {
-    const newVal = smsRedirectTo.trim()
-    const turningOff = !newVal && !!calendar?.sms_redirect_to
-    const turningOn = !!newVal && !calendar?.sms_redirect_to
-    const changing = !!newVal && !!calendar?.sms_redirect_to && newVal !== calendar.sms_redirect_to
+  function handleSmsRedirect() {
+    if (!redirectDirty) return
+    const next = smsRedirectTo.trim()
+    const turningOff = !next && !!saved.smsRedirectTo
 
     if (turningOff) {
       setConfirm({
+        section: 'redirect',
         fields: { sms_redirect_to: null },
         title: 'Remove SMS redirect',
         danger: true,
+        confirmLabel: 'Yes, send to real customers',
         message: (
           <>
             <p>You are about to <strong>remove the SMS redirect</strong>.</p>
-            <p className="mt-2">After this change, <strong>real customers will receive text messages</strong> directly to their phones. Make sure this is intentional and that the system is fully production-ready before proceeding.</p>
+            <p className="mt-2">
+              After this change, <strong>real customers will receive text messages</strong> directly
+              to their phones. Make sure this is intentional and the system is production-ready.
+            </p>
           </>
         ),
-        confirmLabel: 'Yes, send to real customers',
       })
-    } else if (turningOn || changing) {
-      setConfirm({
-        fields: { sms_redirect_to: newVal },
-        title: 'Change SMS redirect',
-        danger: false,
-        message: (
-          <>
-            <p>All outbound SMS will be redirected to <strong className="font-mono">{newVal}</strong> instead of the real recipient.</p>
-            <p className="mt-2">This is a safe change — no real customers will receive messages.</p>
-          </>
-        ),
-        confirmLabel: 'Set redirect',
-      })
-    } else {
-      doSave({ sms_redirect_to: newVal || null })
+      return
     }
+
+    setConfirm({
+      section: 'redirect',
+      fields: { sms_redirect_to: next },
+      title: 'Change SMS redirect',
+      danger: false,
+      confirmLabel: 'Set redirect',
+      message: (
+        <>
+          <p>
+            All outbound SMS will be redirected to{' '}
+            <strong className="mono">{next}</strong> instead of the real recipient.
+          </p>
+          <p className="mt-2">This is a safe change — no real customers will receive messages.</p>
+        </>
+      ),
+    })
   }
 
-  function handleTestOnlyChange(checked) {
-    if (!checked && calendar?.test_only) {
+  // Toggles never change local state optimistically. The switch moves only
+  // after the server confirms, so the UI can't drift out of sync with the DB.
+  function handleTestOnly(next) {
+    if (!next) {
       setConfirm({
+        section: 'testOnly',
         fields: { test_only: false },
         title: 'Disable test mode',
         danger: true,
+        confirmLabel: 'Yes, go live',
         message: (
           <>
             <p>You are about to <strong>disable test mode</strong>.</p>
-            <p className="mt-2">The automation will begin sending messages to real customers. Confirm this is intentional and that all templates are approved and the cadence is correct.</p>
+            <p className="mt-2">
+              The automation will begin sending messages to real customers. Confirm all templates
+              are approved and the cadence is correct.
+            </p>
           </>
         ),
-        confirmLabel: 'Yes, disable test mode',
       })
-      // Reset the toggle visually — will update if confirmed
-      setTestOnly(true)
-    } else {
-      doSave({ test_only: checked })
+      return
     }
+    setTestOnly(true)
+    doSave('testOnly', { test_only: true }).then((r) => { if (!r.ok) setTestOnly(false) })
   }
 
-  function handleDemoModeChange(checked) {
-    if (checked && !testOnly) return // guard: test_only must be on
-    if (!checked && calendar?.demo_mode) {
-      setConfirm({
-        fields: { demo_mode: false },
-        title: 'Disable demo mode',
-        danger: false,
-        message: <p>Demo mode will be turned off. Follow-up timings will return to normal cadence.</p>,
-        confirmLabel: 'Disable demo mode',
-      })
-      setDemoMode(true) // hold toggle until confirmed
-    } else {
-      doSave({ demo_mode: checked })
-    }
+  async function handleDemoMode(next) {
+    if (next && !testOnly) return // guarded by `disabled`, belt-and-braces
+    // Move the switch straight away so the click feels responsive, then roll
+    // back if the server rejects it.
+    setDemoMode(next)
+    const res = await doSave('demo', { demo_mode: next })
+    if (!res.ok) setDemoMode(!next)
   }
 
   const isTestActive = !!(calendar?.sms_redirect_to || calendar?.test_only)
 
   return (
-    <div className="space-y-1.5">
-      {result?.error && (
-        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-          {result.error}
+    <div className="space-y-5">
+      {/* ── Live delivery status ──────────────────────────────────────── */}
+      <div
+        className="flex items-start gap-3 rounded-[9px] border px-4 py-3.5"
+        style={{
+          borderColor: isTestActive ? 'var(--signal-warn-rule)' : 'var(--signal-neg-rule)',
+          background: isTestActive ? 'var(--signal-warn-soft)' : 'var(--signal-neg-soft)',
+          color: isTestActive ? 'var(--tone-warn-ink)' : 'var(--tone-neg-ink)',
+        }}
+      >
+        <span className="relative mt-1 flex h-2 w-2 shrink-0" aria-hidden="true">
+          <span
+            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+            style={{ background: 'currentColor' }}
+          />
+          <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: 'currentColor' }} />
+        </span>
+        <div className="text-[12.5px] leading-relaxed">
+          <strong className="font-semibold">
+            {isTestActive ? 'Test mode is active.' : 'Live — real customers are receiving messages.'}
+          </strong>{' '}
+          {isTestActive ? (
+            <>
+              {calendar?.sms_redirect_to && (
+                <>All SMS are redirected to <code className="mono">{calendar.sms_redirect_to}</code>. </>
+              )}
+              {calendar?.test_only && <><code className="mono">test_only</code> is set. </>}
+              Real customers are not receiving messages.
+            </>
+          ) : (
+            <>Changes to delivery controls take effect immediately.</>
+          )}
         </div>
-      )}
-      {result?.ok && (
-        <div className="rounded bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
-          Settings saved.
-        </div>
-      )}
+      </div>
 
-      {/* Test mode status banner */}
-      {isTestActive && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          <strong>Test mode is active.</strong>
-          {calendar?.sms_redirect_to && <> All SMS are redirected to <code className="font-mono">{calendar.sms_redirect_to}</code>.</>}
-          {calendar?.test_only && <> <code className="font-mono">test_only</code> flag is set.</>}
-          {' '}Real customers are not receiving messages.
-        </div>
-      )}
+      <div className="grid-12">
+      {/* ── Schedule ──────────────────────────────────────────────────── */}
+      <Section
+        className="span-7 span-stretch"
+        title="Business hours & working days"
+        description="Follow-ups are only sent inside these hours, in this timezone."
+        footer={
+          <>
+            <button
+              onClick={handleSaveSchedule}
+              disabled={busy === 'schedule' || !scheduleDirty || !scheduleValid}
+              className="btn btn-primary"
+            >
+              {busy === 'schedule' ? 'Saving…' : 'Save hours & days'}
+            </button>
+            {scheduleDirty && !status.schedule && (
+              <span className="text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+                Unsaved changes
+              </span>
+            )}
+            <SaveState state={status.schedule} />
+          </>
+        }
+      >
+        <Field
+          label="Timezone"
+          htmlFor="tz"
+          hint="IANA name. All cadence timing is calculated in this zone."
+          error={tzError}
+        >
+          <input
+            id="tz"
+            type="text"
+            list="tz-options"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            className="field mono w-full max-w-xs"
+            placeholder="America/Chicago"
+            aria-invalid={!!tzError}
+          />
+          <datalist id="tz-options">
+            {COMMON_TZ.map((tz) => <option key={tz} value={tz} />)}
+          </datalist>
+        </Field>
 
-      {/* Business hours */}
-      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 px-3 py-1.5">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Business hours & working days</span>
-        </div>
-        <div className="px-4 divide-y divide-slate-50">
-          <Field label="Timezone">
-            <input
-              type="text"
-              value={timezone}
-              onChange={e => setTimezone(e.target.value)}
-              className="w-full max-w-xs rounded border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400 font-mono"
-              placeholder="e.g. America/Chicago"
-            />
-          </Field>
-          <Field label="Open time">
+        <Field label="Opening hours" hint="Messages are held outside this window." error={hoursError}>
+          <div className="flex flex-wrap items-center gap-2">
             <input
               type="time"
               value={openTime}
-              onChange={e => setOpenTime(e.target.value)}
-              className="rounded border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+              onChange={(e) => setOpenTime(e.target.value)}
+              className="field"
+              aria-label="Opening time"
+              aria-invalid={!!hoursError}
             />
-          </Field>
-          <Field label="Close time">
+            <span style={{ color: 'var(--ink-faint)' }}>to</span>
             <input
               type="time"
               value={closeTime}
-              onChange={e => setCloseTime(e.target.value)}
-              className="rounded border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+              onChange={(e) => setCloseTime(e.target.value)}
+              className="field"
+              aria-label="Closing time"
+              aria-invalid={!!hoursError}
             />
-          </Field>
-          <Field label="Working days">
-            <div className="flex flex-wrap gap-2">
-              {DAYS.map(day => (
+          </div>
+        </Field>
+
+        <Field label="Working days" hint="Business-day offsets skip the days left off." error={daysError}>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Working days">
+            {DAYS.map(({ n, label, full }) => {
+              const on = workingDays.includes(n)
+              return (
                 <button
-                  key={day}
+                  key={n}
                   type="button"
-                  onClick={() => toggleDay(day)}
-                  className={`rounded px-3 py-1 text-sm font-medium border transition-colors ${
-                    workingDays.includes(day)
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-                  }`}
+                  aria-pressed={on}
+                  aria-label={full}
+                  onClick={() => toggleDay(n)}
+                  className="rounded-lg border px-3 py-1.5 text-[12.5px] font-medium transition-colors"
+                  style={
+                    on
+                      ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-signal)' }
+                      : { background: 'var(--paper-raised)', borderColor: 'var(--rule)', color: 'var(--ink-muted)' }
+                  }
                 >
-                  {DAY_LABELS[day]}
+                  {label}
                 </button>
-              ))}
-            </div>
-          </Field>
-        </div>
-        <div className="px-3 py-2 border-t border-slate-100 flex items-center gap-3">
-          <button
-            onClick={handleSaveSchedule}
-            disabled={saving}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
-          >
-            {saving ? 'Saving…' : 'Save hours & days'}
-          </button>
-        </div>
-      </div>
+              )
+            })}
+          </div>
+        </Field>
+      </Section>
 
-      {/* Quote validity */}
-      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 px-3 py-1.5">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Quote validity</span>
-        </div>
-        <div className="px-4 divide-y divide-slate-50">
-          <Field label="Quote validity" hint="Days after quote sent before follow-ups are suppressed">
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="1"
-                max="365"
-                value={quoteValidityDays}
-                onChange={e => setQuoteValidityDays(parseInt(e.target.value, 10) || 30)}
-                className="w-24 rounded border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-              <span className="text-sm text-slate-500">days</span>
-            </div>
-          </Field>
-        </div>
-        <div className="px-3 py-2 border-t border-slate-100">
-          <button
-            onClick={handleSaveQuoteValidity}
-            disabled={saving}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
-
-      {/* Dangerous settings */}
-      <div className="rounded-md border border-red-200 bg-white overflow-hidden">
-        <div className="border-b border-red-100 px-3 py-1.5">
-          <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Delivery controls — handle with care</span>
-        </div>
-        <div className="px-4 divide-y divide-slate-50">
-          <Field
-            label="SMS redirect"
-            hint="All outbound SMS go to this number instead of the real recipient. Clear to disable."
-          >
-            <div className="flex items-center gap-2">
-              <input
-                type="tel"
-                value={smsRedirectTo}
-                onChange={e => setSmsRedirectTo(e.target.value)}
-                placeholder="+1 (555) 000-0000"
-                className="w-48 rounded border border-slate-200 px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-              <button
-                onClick={handleSmsRedirectChange}
-                disabled={saving}
-                className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
-              >
-                Update
-              </button>
-            </div>
-          </Field>
-
-          <Field
-            label="Test-only mode"
-            hint="When on, the automation skips sending messages entirely. Turn off to go live."
-          >
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleTestOnlyChange(!testOnly)}
-                disabled={saving}
-                className={`w-10 h-5 rounded-full transition-colors disabled:opacity-40 ${testOnly ? 'bg-amber-500' : 'bg-slate-300'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white shadow mx-0.5 transition-transform ${testOnly ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-              <span className="text-sm text-slate-600">
-                {testOnly ? 'Test mode ON — no real messages are sent' : 'Test mode OFF — real messages will be sent'}
+      {/* ── Quote validity ────────────────────────────────────────────── */}
+      <Section
+        className="span-5 span-stretch"
+        title="Quote validity"
+        description="How long a sent quote stays live before follow-ups stop."
+        footer={
+          <>
+            <button
+              onClick={handleSaveQuote}
+              disabled={busy === 'quote' || !quoteDirty || !!quoteError}
+              className="btn btn-primary"
+            >
+              {busy === 'quote' ? 'Saving…' : 'Save'}
+            </button>
+            {quoteDirty && !status.quote && (
+              <span className="text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+                Unsaved changes
               </span>
-            </div>
-          </Field>
+            )}
+            <SaveState state={status.quote} />
+          </>
+        }
+      >
+        <Field
+          label="Validity window"
+          htmlFor="quote-days"
+          hint="Days after a quote is sent before follow-ups are suppressed."
+          error={quoteError}
+        >
+          <div className="flex items-center gap-2">
+            <input
+              id="quote-days"
+              type="number"
+              min={LIMITS.quoteValidityDays.min}
+              max={LIMITS.quoteValidityDays.max}
+              value={quoteValidityDays}
+              onChange={(e) => setQuoteValidityDays(parseInt(e.target.value, 10) || 0)}
+              className="field w-24"
+              aria-invalid={!!quoteError}
+            />
+            <span className="text-[12.5px]" style={{ color: 'var(--ink-muted)' }}>days</span>
+          </div>
+        </Field>
+      </Section>
 
-          <Field
-            label="Demo mode"
-            hint="Compresses follow-up timings to minutes for sales demos. Requires test-only mode."
-          >
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleDemoModeChange(!demoMode)}
-                disabled={saving || (!testOnly && !demoMode)}
-                className={`w-10 h-5 rounded-full transition-colors disabled:opacity-40 ${demoMode ? 'bg-violet-600' : 'bg-slate-300'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white shadow mx-0.5 transition-transform ${demoMode ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
-              <span className="text-sm text-slate-600">
-                {demoMode ? 'Demo mode ON — timings compressed to minutes' : 'Demo mode OFF'}
+      {/* ── Delivery controls ─────────────────────────────────────────── */}
+      <Section
+        className="span-12"
+        tone="danger"
+        title="Delivery controls"
+        description="These decide whether real customers receive messages. Changes are confirmed and written to the audit log."
+        footer={
+          <span className="text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>
+            Every change here is recorded in the audit log.
+          </span>
+        }
+      >
+        <Field
+          label="SMS redirect"
+          htmlFor="sms-redirect"
+          hint="All outbound SMS go to this number instead of the real recipient. Clear to disable."
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              id="sms-redirect"
+              type="tel"
+              value={smsRedirectTo}
+              onChange={(e) => setSmsRedirectTo(e.target.value)}
+              placeholder="+1 555 000 0000"
+              className="field mono w-52"
+            />
+            <button
+              onClick={handleSmsRedirect}
+              disabled={busy === 'redirect' || !redirectDirty}
+              className="btn btn-quiet"
+            >
+              {busy === 'redirect' ? 'Saving…' : 'Update'}
+            </button>
+            <SaveState state={status.redirect} />
+          </div>
+        </Field>
+
+        <Field
+          label="Test-only mode"
+          hint="When on, the automation skips sending messages entirely. Turn off to go live."
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              checked={testOnly}
+              onChange={handleTestOnly}
+              disabled={busy === 'testOnly'}
+              tone="warn"
+              label="Test-only mode"
+            />
+            <span className="text-[12.5px]" style={{ color: 'var(--ink-secondary)' }}>
+              {testOnly ? 'ON — no real messages are sent' : 'OFF — real messages will be sent'}
+            </span>
+            <SaveState state={status.testOnly} />
+          </div>
+        </Field>
+
+        <Field
+          label="Demo mode"
+          hint="Compresses follow-up timings to minutes for sales demos. Requires test-only mode."
+        >
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch
+                checked={demoMode}
+                onChange={handleDemoMode}
+                disabled={busy === 'demo' || (!testOnly && !demoMode)}
+                tone="alt"
+                label="Demo mode"
+              />
+              <span className="text-[12.5px]" style={{ color: 'var(--ink-secondary)' }}>
+                {demoMode ? 'ON — timings compressed to minutes' : 'OFF'}
               </span>
               {!testOnly && !demoMode && (
-                <span className="text-xs text-slate-400">Enable test-only mode first</span>
+                <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
+                  Enable test-only mode first
+                </span>
+              )}
+              <SaveState state={status.demo} />
+            </div>
+
+            <div
+              className="rounded-lg px-3.5 py-3"
+              style={{ background: 'var(--paper-sunken)', opacity: demoMode ? 1 : 0.6 }}
+            >
+              <label htmlFor="poll" className="eyebrow mb-1.5 block">Poller interval</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="poll"
+                  type="number"
+                  min={LIMITS.demoPollInterval.min}
+                  max={LIMITS.demoPollInterval.max}
+                  value={demoPollInterval}
+                  onChange={(e) => setDemoPollInterval(parseInt(e.target.value, 10) || 0)}
+                  className="field w-24"
+                  aria-invalid={!!pollError}
+                  aria-describedby="poll-hint"
+                />
+                <span className="text-[12.5px]" style={{ color: 'var(--ink-muted)' }}>seconds</span>
+                <button
+                  onClick={() => !pollError && pollDirty && doSave('poll', { demo_poll_interval_seconds: Number(demoPollInterval) })}
+                  disabled={busy === 'poll' || !pollDirty || !!pollError}
+                  className="btn btn-quiet h-8 text-[12.5px]"
+                >
+                  {busy === 'poll' ? 'Saving…' : 'Save'}
+                </button>
+                <SaveState state={status.poll} />
+              </div>
+              {pollError ? (
+                <p className="mt-1.5 text-[11.5px] font-medium" style={{ color: 'var(--tone-neg-ink)' }}>
+                  {pollError}
+                </p>
+              ) : (
+                <p id="poll-hint" className="mt-1.5 text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
+                  The follow-up poller must run at this interval for demo mode to feel live
+                  ({LIMITS.demoPollInterval.min}–{LIMITS.demoPollInterval.max}s).
+                </p>
               )}
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs text-slate-500">Poller interval:</span>
-              <input
-                type="number"
-                min="1"
-                max="3600"
-                value={demoPollInterval}
-                onChange={e => setDemoPollInterval(parseInt(e.target.value, 10) || 10)}
-                className="w-20 rounded border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-              <span className="text-xs text-slate-500">seconds</span>
-              <button
-                onClick={() => doSave({ demo_poll_interval_seconds: demoPollInterval })}
-                disabled={saving}
-                className="rounded bg-slate-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-40"
-              >
-                Save
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              The follow-up poller must run at this interval for demo mode to feel live.
-            </p>
-          </Field>
-        </div>
+          </div>
+        </Field>
+      </Section>
       </div>
 
-      {/* Confirm dialog */}
       <ConfirmDialog
         open={!!confirm}
         title={confirm?.title}
@@ -362,18 +680,16 @@ export default function SettingsForm({ calendar }) {
         confirmLabel={confirm?.confirmLabel}
         danger={confirm?.danger}
         onConfirm={() => {
-          const fields = confirm.fields
+          const { section, fields } = confirm
           setConfirm(null)
-          doSave(fields)
+          doSave(section, fields).then((res) => {
+            if (!res.ok) return
+            if ('test_only' in fields) setTestOnly(fields.test_only)
+            if ('demo_mode' in fields) setDemoMode(fields.demo_mode)
+            if ('sms_redirect_to' in fields) setSmsRedirectTo(fields.sms_redirect_to ?? '')
+          })
         }}
-        onCancel={() => {
-          // Reset local state to match current saved state
-          setSmsRedirectTo(calendar?.sms_redirect_to ?? '')
-          setTestOnly(calendar?.test_only ?? false)
-          setDemoMode(calendar?.demo_mode ?? false)
-          setDemoPollInterval(calendar?.demo_poll_interval_seconds ?? 10)
-          setConfirm(null)
-        }}
+        onCancel={() => setConfirm(null)}
       />
     </div>
   )

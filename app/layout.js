@@ -1,11 +1,31 @@
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter, Fraunces, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 import ModeBanner from '@/components/ModeBanner'
 import { getBusinessCalendar } from '@/lib/queries'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+// Inter for data and UI — optical sizing keeps 11px labels crisp at table density.
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+// Fraunces for headings and figures. A variable serif with a SOFT axis, so the
+// display face reads editorial rather than decorative.
+const fraunces = Fraunces({
+  variable: '--font-fraunces',
+  subsets: ['latin'],
+  display: 'swap',
+  axes: ['SOFT', 'WONK', 'opsz'],
+})
+
+// JetBrains Mono for IDs, phone numbers and error strings — slashed zero.
+const jetbrains = JetBrains_Mono({
+  variable: '--font-jetbrains',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata = {
   title: { default: 'IVOS Dashboard', template: '%s · IVOS' },
@@ -13,7 +33,14 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-export const viewport = { width: 'device-width', initialScale: 1 }
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8f9fc' },
+    { media: '(prefers-color-scheme: dark)', color: '#14161d' },
+  ],
+}
 
 export default async function RootLayout({ children }) {
   let testMode = false
@@ -27,7 +54,11 @@ export default async function RootLayout({ children }) {
   }
 
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -35,10 +66,10 @@ export default async function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className="min-h-full bg-slate-50 text-slate-900">
+      <body className="min-h-full">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-slate-800 focus:px-3 focus:py-1.5 focus:text-sm focus:text-white"
+          className="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50"
         >
           Skip to content
         </a>
@@ -46,7 +77,13 @@ export default async function RootLayout({ children }) {
           <Nav />
           <div className="flex min-w-0 flex-1 flex-col">
             <ModeBanner testMode={testMode} demoMode={demoMode} />
-            <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-auto p-1.5 focus:outline-none">{children}</main>
+            <main
+              id="main"
+              tabIndex={-1}
+              className="flex min-h-0 flex-1 flex-col overflow-auto p-6 focus:outline-none lg:p-8"
+            >
+              {children}
+            </main>
           </div>
         </div>
       </body>

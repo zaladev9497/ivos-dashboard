@@ -28,43 +28,57 @@ export default function ExceptionActions({ id, state }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-1.5">
         {state === 'open' && (
-          <button
-            onClick={handleAck}
-            disabled={saving}
-            className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-          >
+          <button onClick={handleAck} disabled={saving} className="btn btn-quiet h-6 px-2 text-[11px]">
             Ack
           </button>
         )}
         <button
           onClick={() => setResolveOpen(v => !v)}
-          className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50"
+          className="btn h-6 px-2 text-[11px]"
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--signal-pos-rule)',
+            color: 'var(--tone-pos-ink)',
+          }}
         >
           Resolve
         </button>
       </div>
       {resolveOpen && (
-        <div className="flex items-center gap-1.5 mt-1">
+        <div className="mt-1.5 flex items-center gap-1.5">
           <input
             type="text"
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="Resolution note (optional)"
-            className="rounded border border-slate-200 px-2 py-0.5 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="field h-6 w-48 text-[11.5px]"
           />
           <button
             onClick={handleResolve}
             disabled={saving}
-            className="rounded bg-green-700 px-2 py-0.5 text-xs text-white hover:bg-green-600 disabled:opacity-40"
+            className="btn h-6 px-2 text-[11px]"
+            style={{
+              background: 'var(--signal-pos)',
+              border: '1px solid var(--signal-pos)',
+              color: 'var(--on-signal)',
+            }}
           >
-            {saving ? '…' : 'OK'}
+            {saving ? '…' : 'Save'}
           </button>
-          <button onClick={() => setResolveOpen(false)} className="text-xs text-slate-400 hover:text-slate-600">✕</button>
+          <button
+            onClick={() => setResolveOpen(false)}
+            className="btn btn-ghost h-6 w-6 p-0! text-[11px]"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && (
+        <p className="text-[11px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
+      )}
     </div>
   )
 }

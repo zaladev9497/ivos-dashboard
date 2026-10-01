@@ -1,5 +1,5 @@
 'use client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Badge from '@/components/Badge'
@@ -7,6 +7,45 @@ import Timestamp from '@/components/Timestamp'
 import Pagination from '@/components/Pagination'
 import EmptyState from '@/components/EmptyState'
 import { journeyTypeLabel } from '@/lib/utils'
+
+// A filter that reads as a toggle chip rather than a loose browser checkbox.
+function FilterChip({ checked, onChange, children }) {
+  return (
+    <label
+      className="btn h-8 cursor-pointer select-none px-2.5"
+      style={{
+        background: checked ? 'var(--accent-soft)' : 'var(--paper-raised)',
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: checked ? 'var(--accent-rule)' : 'var(--rule)',
+        color: checked ? 'var(--accent-ink)' : 'var(--ink-muted)',
+        boxShadow: 'var(--lift-flat)',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+      />
+      <span
+        className="flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border transition-colors"
+        style={{
+          borderColor: checked ? 'var(--accent)' : 'var(--rule-strong)',
+          background: checked ? 'var(--accent)' : 'transparent',
+        }}
+        aria-hidden="true"
+      >
+        {checked && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--paper-raised)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        )}
+      </span>
+      {children}
+    </label>
+  )
+}
 
 export default function LeadsTable({
   initialLeads,
@@ -17,7 +56,7 @@ export default function LeadsTable({
   fetchError,
 }) {
   const router = useRouter()
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
   const [search, setSearch] = useState(currentFilters.search)
   const [journeyType, setJourneyType] = useState(currentFilters.journeyType)
@@ -54,136 +93,164 @@ export default function LeadsTable({
   const latestJourney = (lead) =>
     lead.journeys?.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0]
 
-  const hasUpcoming = (lead) =>
-    lead.scheduled_messages?.some((m) => m.state === 'pending') ?? false
-
-  const field = 'h-8 rounded border border-slate-200 bg-white px-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-slate-400'
-  const th = 'px-3 py-1.5 text-left font-medium'
-  const td = 'px-3 py-1.5'
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
-      {/* Toolbar */}
+    <div className="surface flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <form
         onSubmit={handleSearch}
-        className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2"
+        className="flex shrink-0 flex-wrap items-center gap-2.5 border-b px-5 py-3.5"
+        style={{ borderColor: 'var(--rule-faint)' }}
       >
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search name, email or phone…"
-          aria-label="Search"
-          className={`${field} min-w-44 flex-1 sm:max-w-xs`}
-        />
+        <div className="relative min-w-52 flex-1 sm:max-w-xs">
+          <svg
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2"
+            style={{ color: 'var(--ink-faint)' }}
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, email or phone…"
+            aria-label="Search leads"
+            className="field w-full pl-8"
+          />
+        </div>
+
         <select
           value={journeyType}
           onChange={(e) => { setJourneyType(e.target.value); applyFilters({ journeyType: e.target.value }) }}
           aria-label="Journey type"
-          className={field}
+          className="field"
         >
           <option value="">All types</option>
           <option value="retrofit">Retrofit</option>
           <option value="new_construction">New Construction</option>
           <option value="service">Service</option>
         </select>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => { setDateFrom(e.target.value); applyFilters({ dateFrom: e.target.value }) }}
-          aria-label="From date"
-          title="From"
-          className={field}
-        />
-        <span className="text-slate-400">–</span>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => { setDateTo(e.target.value); applyFilters({ dateTo: e.target.value }) }}
-          aria-label="To date"
-          title="To"
-          className={field}
-        />
-        <button type="submit" className="h-8 rounded bg-slate-800 px-3 text-[13px] font-medium text-white hover:bg-slate-700">
-          Search
-        </button>
-        <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600">
+
+        {/* Date range reads as one control, not two stray inputs. */}
+        <div
+          className="flex items-center overflow-hidden rounded-[5px] border"
+          style={{ borderColor: 'var(--rule)', background: 'var(--paper-raised)', boxShadow: 'var(--lift-flat)' }}
+        >
           <input
-            type="checkbox"
-            checked={hasException}
-            onChange={(e) => { setHasException(e.target.checked); applyFilters({ hasException: e.target.checked }) }}
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); applyFilters({ dateFrom: e.target.value }) }}
+            aria-label="From date"
+            title="From"
+            className="h-8 border-0 bg-transparent px-2 text-[12.5px] focus:outline-none"
+            style={{ color: 'var(--ink)' }}
           />
+          <span className="text-[12px]" style={{ color: 'var(--ink-faint)' }}>→</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); applyFilters({ dateTo: e.target.value }) }}
+            aria-label="To date"
+            title="To"
+            className="h-8 border-0 bg-transparent px-2 text-[12.5px] focus:outline-none"
+            style={{ color: 'var(--ink)' }}
+          />
+        </div>
+
+        <button type="submit" className="btn btn-primary">Search</button>
+
+        <FilterChip
+          checked={hasException}
+          onChange={(e) => { setHasException(e.target.checked); applyFilters({ hasException: e.target.checked }) }}
+        >
           Exceptions
-        </label>
-        <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-slate-600">
-          <input
-            type="checkbox"
-            checked={showTest}
-            onChange={(e) => { setShowTest(e.target.checked); applyFilters({ showTest: e.target.checked }) }}
-          />
+        </FilterChip>
+        <FilterChip
+          checked={showTest}
+          onChange={(e) => { setShowTest(e.target.checked); applyFilters({ showTest: e.target.checked }) }}
+        >
           Test records
-        </label>
-        <span className="ml-auto text-xs tabular-nums text-slate-500">
-          {total} lead{total !== 1 ? 's' : ''}
+        </FilterChip>
+
+        <span className="ml-auto flex items-center gap-2">
+          {isPending && (
+            <span
+              className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-transparent"
+              style={{ borderTopColor: 'var(--accent)', borderRightColor: 'var(--accent)' }}
+              aria-hidden="true"
+            />
+          )}
+          <span className="eyebrow">
+            <span className="tabular" style={{ color: 'var(--ink-secondary)' }}>{total.toLocaleString()}</span>
+            {' '}lead{total !== 1 ? 's' : ''}
+          </span>
         </span>
       </form>
 
       {fetchError && (
-        <div className="shrink-0 border-b border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          className="shrink-0 border-b px-5 py-3 text-[12.5px]"
+          style={{ borderColor: 'var(--signal-neg-rule)', background: 'var(--signal-neg-soft)', color: 'var(--tone-neg-ink)' }}
+        >
           {fetchError}
         </div>
       )}
 
-      {/* Scrollable table body, sticky header */}
+      {/* ── Table ───────────────────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 overflow-auto">
         {initialLeads.length === 0 ? (
-          <EmptyState title="No leads found" description="Try adjusting your filters or search." />
+          <EmptyState title="No leads found" description="Try adjusting your filters or search terms." />
         ) : (
-          <table className="w-full min-w-[560px] text-[13px]">
-            <thead className="sticky top-0 z-10 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 shadow-[inset_0_-1px_0] shadow-slate-200">
+          <table className="data-table min-w-155">
+            <thead>
               <tr>
-                <th className={th}>Lead</th>
-                <th className={`${th} hidden md:table-cell`}>Phone</th>
-                <th className={`${th} hidden sm:table-cell`}>Type</th>
-                <th className={`${th} hidden lg:table-cell`}>Stage</th>
-                <th className={`${th} hidden xl:table-cell`}>Last activity</th>
-                <th className={th}>Status</th>
+                <th>Lead</th>
+                <th className="hidden md:table-cell">Phone</th>
+                <th className="hidden sm:table-cell">Type</th>
+                <th className="hidden lg:table-cell">Stage</th>
+                <th className="hidden xl:table-cell">Last activity</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {initialLeads.map((lead) => {
                 const journey = latestJourney(lead)
                 const exc = activeExceptions(lead)
                 return (
-                  <tr key={lead.id} className="hover:bg-slate-50">
-                    <td className={td}>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Link
-                          href={`/leads/${lead.id}`}
-                          className="font-medium text-slate-800 hover:text-blue-600"
-                        >
+                  <tr key={lead.id}>
+                    <td>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Link href={`/leads/${lead.id}`} className="link-subtle">
                           {lead.full_name || '—'}
                         </Link>
-                        {lead.is_test_record && <Badge label="test" status="test" />}
-                        {lead.needs_manual_routing && <Badge label="manual" status="medium" />}
-                        {exc > 0 && <Badge label={`${exc} exc`} status="high" />}
+                        {lead.is_test_record && <Badge label="Test" status="test" />}
+                        {lead.needs_manual_routing && <Badge label="Manual" status="medium" />}
+                        {exc > 0 && <Badge label={`${exc} exception${exc > 1 ? 's' : ''}`} status="high" />}
                       </div>
                     </td>
-                    <td className={`${td} hidden font-mono text-xs text-slate-500 md:table-cell`}>{lead.phone ?? '—'}</td>
-                    <td className={`${td} hidden sm:table-cell`}>
+                    <td className="mono hidden text-[12px] md:table-cell" style={{ color: 'var(--ink-muted)' }}>
+                      {lead.phone ?? '—'}
+                    </td>
+                    <td className="hidden sm:table-cell">
                       {lead.journey_type ? (
-                        <Badge label={journeyTypeLabel(lead.journey_type)} status="pending" />
+                        <Badge label={journeyTypeLabel(lead.journey_type)} status="neutral" dot={false} />
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span style={{ color: 'var(--ink-faint)' }}>—</span>
                       )}
                     </td>
-                    <td className={`${td} hidden text-slate-700 lg:table-cell`}>
-                      {journey ? (journey.current_stage ?? journey.state) : <span className="text-slate-400">—</span>}
+                    <td className="hidden lg:table-cell">
+                      {journey ? (
+                        journey.current_stage ?? journey.state
+                      ) : (
+                        <span style={{ color: 'var(--ink-faint)' }}>—</span>
+                      )}
                     </td>
-                    <td className={`${td} hidden xl:table-cell`}>
+                    <td className="hidden xl:table-cell">
                       <Timestamp iso={journey?.updated_at ?? lead.ingested_at} inline />
                     </td>
-                    <td className={td}>
+                    <td>
                       <Badge label={lead.request_status ?? 'unknown'} status={lead.request_status} />
                     </td>
                   </tr>

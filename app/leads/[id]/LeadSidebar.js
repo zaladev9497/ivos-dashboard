@@ -4,22 +4,22 @@ import { formatDate, journeyTypeLabel } from '@/lib/utils'
 function Field({ label, children }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</dt>
-      <dd className="mt-0.5 text-sm text-slate-800">{children ?? <span className="text-slate-400">—</span>}</dd>
+      <dt className="eyebrow">{label}</dt>
+      <dd className="mt-1 text-[13px]" style={{ color: 'var(--ink)' }}>
+        {children ?? <span style={{ color: 'var(--ink-faint)' }}>—</span>}
+      </dd>
     </div>
   )
 }
 
 function Section({ title, children }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-      <div className="border-b border-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-        {title}
+    <section className="surface overflow-hidden">
+      <div className="section-head">
+        <span className="eyebrow">{title}</span>
       </div>
-      <dl className="divide-y divide-slate-50">
-        <div className="px-3 py-2 grid grid-cols-1 gap-3">{children}</div>
-      </dl>
-    </div>
+      <dl className="grid grid-cols-1 gap-4 px-5 py-4">{children}</dl>
+    </section>
   )
 }
 
@@ -29,21 +29,19 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
   const conv = conversations[0]
 
   return (
-    <aside className="space-y-1.5">
+    <aside className="space-y-4">
       {/* Contact */}
       <Section title="Contact">
         <Field label="Name">{lead.full_name}</Field>
         <Field label="Email">
           {lead.email ? (
-            <a href={`mailto:${lead.email}`} className="text-blue-600 hover:underline">
+            <a href={`mailto:${lead.email}`} className="link">
               {lead.email}
             </a>
           ) : null}
         </Field>
         <Field label="Phone">
-          {lead.phone ? (
-            <span className="font-mono">{lead.phone}</span>
-          ) : null}
+          {lead.phone ? <span className="mono text-[12.5px]">{lead.phone}</span> : null}
         </Field>
         <Field label="Address">
           {[lead.street, lead.city, lead.province, lead.postal_code].filter(Boolean).join(', ') || null}
@@ -54,7 +52,7 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
               href={lead.external_web_uri}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm"
+              className="link"
             >
               Open in Jobber ↗
             </a>
@@ -96,7 +94,7 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
                 href={primaryJourney.quote_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+                className="link"
               >
                 #{primaryJourney.quote_number} ↗
               </a>
@@ -127,7 +125,9 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
           {conv.opted_out && (
             <Field label="Opted out">
               <Badge label="Opted out" status="failed" />
-              {conv.opted_out_at && <span className="text-slate-400 ml-1.5 text-xs">{formatDate(conv.opted_out_at)}</span>}
+              {conv.opted_out_at && (
+                <span className="ml-1.5 text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>{formatDate(conv.opted_out_at)}</span>
+              )}
             </Field>
           )}
           <Field label="Messages">{conv.message_count}</Field>
@@ -144,9 +144,13 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
       {ncOrders.length > 0 && (
         <Section title="Orders">
           {ncOrders.map((o) => (
-            <div key={o.id} className="text-sm">
-              <div className="font-medium text-slate-700">{o.order_type} — {o.order_number}</div>
-              <div className="text-slate-400 text-xs">{o.supplier} · {formatDate(o.first_seen_at)}</div>
+            <div key={o.id}>
+              <div className="text-[13px] font-medium" style={{ color: 'var(--ink)' }}>
+                {o.order_type} — <span className="mono">{o.order_number}</span>
+              </div>
+              <div className="mt-0.5 text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
+                {o.supplier} · {formatDate(o.first_seen_at)}
+              </div>
             </div>
           ))}
         </Section>
@@ -156,21 +160,23 @@ export default function LeadSidebar({ lead, journeys, conversations, exceptions,
       {openExceptions.length > 0 && (
         <Section title="Open exceptions">
           {openExceptions.map((exc) => (
-            <div key={exc.id} className="text-sm space-y-1">
+            <div key={exc.id} className="space-y-1">
               <div className="flex items-center gap-2">
                 <Badge label={exc.severity} status={exc.severity} />
-                <span className="font-medium text-slate-700">{exc.exception_type}</span>
+                <span className="mono text-[12px]" style={{ color: 'var(--ink-secondary)' }}>{exc.exception_type}</span>
               </div>
-              <p className="text-slate-500 text-xs">{exc.summary}</p>
+              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>{exc.summary}</p>
             </div>
           ))}
         </Section>
       )}
 
       {/* Ingested */}
-      <div className="text-xs text-slate-400 px-1">
-        Ingested {formatDate(lead.ingested_at)} · Source: {lead.source_channel ?? lead.source_system ?? '—'}
-      </div>
+      <p className="px-1 text-[11px] leading-relaxed" style={{ color: 'var(--ink-faint)' }}>
+        Ingested {formatDate(lead.ingested_at)}
+        <br />
+        Source: {lead.source_channel ?? lead.source_system ?? '—'}
+      </p>
     </aside>
   )
 }
