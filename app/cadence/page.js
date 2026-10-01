@@ -2,6 +2,7 @@ import { getCadenceSteps, getActiveJourneyCountByType, getBusinessCalendar } fro
 import CadenceEditor from './CadenceEditor'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Cadence' }
 
 const JOURNEYS = ['retrofit', 'new_construction', 'service']
 

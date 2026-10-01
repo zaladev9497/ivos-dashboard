@@ -9,6 +9,8 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Lets CI / local checks build into a separate folder (NEXT_DIST_DIR=.next-check) without touching a running dev server.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {

@@ -5,6 +5,7 @@ import EmptyState from '@/components/EmptyState'
 import { templateLabel, friendlyBody } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Templates' }
 
 const JOURNEY_ORDER = ['retrofit', 'nc', 'service', 'post_sale']
 const JOURNEY_LABELS = { retrofit: 'Retrofit', nc: 'New Construction', service: 'Service', post_sale: 'Post Sale' }

@@ -4,6 +4,7 @@ import {
   getDailyReports,
   getBusinessCalendar,
   getExceptionStats,
+  safePage,
 } from '@/lib/queries'
 import Link from 'next/link'
 import Badge from '@/components/Badge'
@@ -11,9 +12,10 @@ import Timestamp from '@/components/Timestamp'
 import EmptyState from '@/components/EmptyState'
 import ExceptionActions from './ExceptionActions'
 import RetryButton from './RetryButton'
-import { formatDate, templateLabel } from '@/lib/utils'
+import { formatDate, templateLabel, formatDetail } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Operations' }
 
 function SectionHeader({ title, count }) {
   return (
@@ -28,7 +30,7 @@ function SectionHeader({ title, count }) {
 
 export default async function OpsPage({ searchParams }) {
   const params = await searchParams
-  const reportPage = parseInt(params?.report_page ?? '1', 10)
+  const reportPage = safePage(params?.report_page)
 
   let exceptions = [], failedScheduled = [], reportsResult = { reports: [], total: 0, pageSize: 50 }
   let calendar = null, stats = { low: 0, medium: 0, high: 0 }
@@ -239,7 +241,7 @@ export default async function OpsPage({ searchParams }) {
                   </td>
                   <td className="px-3 py-1.5 text-slate-500">{r.item_count ?? '—'}</td>
                   <td className="px-3 py-1.5 text-xs text-slate-500 max-w-xs">
-                    <p className="truncate" title={r.detail}>{r.detail || '—'}</p>
+                    <p className="truncate" title={formatDetail(r.detail)}>{formatDetail(r.detail) || '—'}</p>
                   </td>
                 </tr>
               ))}

@@ -1,16 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
 import { relativeTime, formatDate } from '@/lib/utils'
 import { useMinuteClock } from '@/lib/client-store'
 
 export default function Timestamp({ iso, className = '', inline = false }) {
-  const [rel, setRel] = useState('')
-
-  useEffect(() => {
-    setRel(relativeTime(iso))
-    const id = setInterval(() => setRel(relativeTime(iso)), 60_000)
-    return () => clearInterval(id)
-  }, [iso])
+  // 0 on the server / first paint, then ticks each minute, so the relative text never mismatches hydration.
+  const tick = useMinuteClock()
+  const rel = tick ? relativeTime(iso) : ''
 
   if (!iso) return <span className="text-slate-400">—</span>
   if (inline) {

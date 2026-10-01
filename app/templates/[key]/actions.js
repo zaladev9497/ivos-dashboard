@@ -4,8 +4,31 @@ import { requireActor } from '@/lib/auth'
 import { createServerClient } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
 
+const MAX_BODY = 1600 // 10 SMS segments; hard stop against accidental pastes
+const MAX_TITLE = 200
+const MAX_NOTES = 2000
+
+// Placeholders must be balanced and well formed: {{first_name}} ok, {{first_name} or {{ }} not.
+function placeholderProblem(body) {
+  const open = (body.match(/\{\{/g) ?? []).length
+  const close = (body.match(/\}\}/g) ?? []).length
+  if (open !== close) return 'Placeholders are unbalanced — every {{ needs a matching }}.'
+  if (/\{\{\s*\}\}/.test(body)) return 'There is an empty placeholder {{ }}.'
+  for (const m of body.matchAll(/\{\{([^}]*)\}\}/g)) {
+    if (!/^\s*[a-zA-Z0-9_]+\s*$/.test(m[1])) return `Placeholder ${m[0]} has invalid characters — use letters, numbers and underscores only.`
+  }
+  return null
+}
+
 export async function saveTemplate({ templateKey, body, taskTitle, notes }) {
   const actor = await requireActor()
+  if (typeof templateKey !== 'string' || !templateKey) return { error: 'Missing template key.' }
+  if (typeof body !== 'string' || !body.trim()) return { error: 'The message body cannot be empty.' }
+  if (body.length > MAX_BODY) return { error: `The message body is too long (max ${MAX_BODY} characters).` }
+  const placeholderErr = placeholderProblem(body)
+  if (placeholderErr) return { error: placeholderErr }
+  if (taskTitle && String(taskTitle).length > MAX_TITLE) return { error: `Task title is too long (max ${MAX_TITLE}).` }
+  if (notes && String(notes).length > MAX_NOTES) return { error: `Notes are too long (max ${MAX_NOTES}).` }
   const sb = createServerClient()
 
   const { data: current, error: readErr } = await sb
@@ -16,6 +39,9 @@ export async function saveTemplate({ templateKey, body, taskTitle, notes }) {
     .limit(1)
     .maybeSingle()
   if (readErr) return { error: readErr.message }
+
+  if (!current) return { error: 'Template not found — new templates cannot be created from the dashboard.' }
+  if (body === current.body && (taskTitle ?? null) === (current.task_title ?? null)) return { error: 'No changes to save.' }
 
   const newVersion = (current?.version ?? 0) + 1
   const { company_id, channel } = current ?? {}
@@ -47,8 +73,11 @@ export async function approveTemplate({ templateId, templateKey, approverName })
   if (!approverName?.trim()) return { error: 'Approver name is required.' }
 
   const sb = createServerClient()
-  const { data: current } = await sb.from('message_templates').select('approved, version').eq('id', templateId).maybeSingle()
-  if (current?.approved) return { error: 'Already approved.' }
+  const { data: current } = await sb.from('message_templates').select('approved, version, is_active, template_key').eq('id', templateId).maybeSingle()
+  if (!current) return { error: 'Template not found.' }
+  if (current.template_key !== templateKey) return { error: 'Template does not match.' }
+  if (current.approved) return { error: 'Already approved.' }
+  if (!current.is_active) return { error: 'Only the current version can be approved — reload the page.' }
 
   const { error } = await sb.from('message_templates').update({ approved: true }).eq('id', templateId)
   if (error) return { error: error.message }

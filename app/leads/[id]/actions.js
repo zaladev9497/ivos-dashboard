@@ -8,6 +8,12 @@ import { triggerDemoAdvance } from '@/app/demo-actions'
 export async function pauseJourney({ journeyId, reason, pausedUntil }) {
   const actor = await requireActor()
   if (!reason?.trim()) return { error: 'A pause reason is required.' }
+  if (reason.length > 500) return { error: 'The pause reason is too long (max 500 characters).' }
+  if (pausedUntil) {
+    const until = new Date(pausedUntil)
+    if (Number.isNaN(until.getTime())) return { error: '"Paused until" is not a valid date.' }
+    if (until.getTime() <= Date.now()) return { error: '"Paused until" must be in the future.' }
+  }
   const sb = createServerClient()
 
   const { data: before } = await sb.from('journeys').select('state, lead_id').eq('id', journeyId).maybeSingle()
@@ -53,6 +59,7 @@ export async function resumeJourney({ journeyId }) {
 export async function cancelScheduledMessage({ messageId, reason }) {
   const actor = await requireActor()
   if (!reason?.trim()) return { error: 'A cancellation reason is required.' }
+  if (reason.length > 500) return { error: 'The cancellation reason is too long (max 500 characters).' }
   const sb = createServerClient()
 
   const { data: before } = await sb

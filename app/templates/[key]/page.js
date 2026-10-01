@@ -5,6 +5,7 @@ import TemplateEditor from './TemplateEditor'
 import { templateLabel } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Template' }
 
 export default async function TemplatePage({ params }) {
   const { key } = await params

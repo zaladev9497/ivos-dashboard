@@ -1,12 +1,13 @@
-import { getMessages, getScheduledMessages, getBusinessCalendar } from '@/lib/queries'
+import { safePage, getMessages, getScheduledMessages, getBusinessCalendar } from '@/lib/queries'
 import MessagesView from './MessagesView'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Messages' }
 
 export default async function MessagesPage({ searchParams }) {
   const params = await searchParams
   const tab = params?.tab ?? 'sent'
-  const page = parseInt(params?.page ?? '1', 10)
+  const page = safePage(params?.page)
   const direction = params?.direction ?? ''
   const deliveryStatus = params?.delivery_status ?? ''
   const purpose = params?.purpose ?? ''

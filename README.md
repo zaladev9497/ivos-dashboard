@@ -1,85 +1,74 @@
 # IVOS Dashboard
 
-Read-only internal dashboard for Idlewild / Texas Shade. Shows everything the automations did for every lead — open one lead and see the full story.
+Internal operations dashboard for Idlewild / Texas Shade. Shows what the n8n automations did for every lead, and lets the team manage templates, cadence timing, settings and exceptions.
 
 ## Stack
 
-- Next.js 15 (App Router) — JavaScript, no TypeScript
-- Tailwind CSS
-- Supabase (`@supabase/supabase-js`) — **server-side only**
+- Next.js 16 (App Router), JavaScript, Tailwind CSS 4
+- Supabase (`@supabase/supabase-js`) — **server-side only**, using the service role key
+- n8n automations write the data; this app reads it and edits a few control tables
 
-## Setup
-
-### 1. Prerequisites
-
-- Node.js 18+
-- npm
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure environment variables
-
-Fill in `.env.local` (never commit this file):
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-The service role key bypasses RLS. It is only ever used in server components and route handlers — it is never sent to the browser.
-
-### 4. Run the dev server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
+> This Next.js version has breaking changes (e.g. `middleware` is now `proxy`, error pages receive `retry`).
+> Read the guides in `node_modules/next/dist/docs/` before changing framework conventions.
 
 ## Pages
 
-| Route | Description |
-|-------|-------------|
-| `/` | Leads list — searchable, filterable. Hides test records by default. |
-| `/leads/[id]` | Lead detail — full timeline: events, messages, scheduled messages, exceptions, GlassHouse conversation. |
-| `/pipeline` | Active journeys grouped by type and stage with age. |
-| `/messages` | All sent/received messages and all scheduled messages with suppression reasons. |
-| `/ops` | Open exceptions, failed scheduled messages, daily reports, business calendar, test-mode banner. |
+| Page | What it does |
+|---|---|
+| Leads | Searchable lead list; open a lead for the full timeline, scheduled messages and actions |
+| Pipeline | Active journeys grouped by type and stage |
+| Messages | Sent and scheduled messages, grouped by lead |
+| Operations | Open exceptions, failed scheduled messages, business calendar, daily reports |
+| Templates | Message templates (edit → new version → needs approval before it sends) |
+| Cadence | Follow-up timing per journey step |
+| Audit | Every change made through the dashboard |
+| Settings | Business hours, test mode / SMS redirect, demo mode |
 
-## Important constraints
+Light and dark themes (toggle in the sidebar); the sidebar collapses to icons.
 
-- **Read-only.** This dashboard performs no writes. The automations own the data.
-- **No public Supabase queries.** RLS is enabled with no public policies. Every Supabase call uses `SUPABASE_SERVICE_ROLE_KEY` via server components or route handlers.
-- **Do not add write paths in v1.** When v2 adds editing, keep mutations in clearly separate server actions or API routes so the read-only boundary stays visible.
-- **Timestamps** are stored in UTC and displayed in `America/Chicago` with the timezone label shown.
+## Setup
 
-## Project structure
-
+```bash
+npm install
+cp .env.example .env.local   # then fill in the values
+npm run dev                  # http://localhost:3000
 ```
-app/
-  page.js              # Leads list (server)
-  LeadsTable.js        # Leads list (client — filters + pagination)
-  leads/[id]/
-    page.js            # Lead detail (server — fetches all related data)
-    Timeline.js        # Unified timeline component (server)
-    LeadSidebar.js     # Contact / journey / SMS state panel (server)
-  pipeline/page.js     # Pipeline view (server)
-  messages/
-    page.js            # Messages (server)
-    MessagesView.js    # Messages (client — tabs + filters)
-  ops/page.js          # Operations (server)
-lib/
-  supabase.js          # createServerClient() — service role, server only
-  queries.js           # All DB queries — import only in server components
-  utils.js             # Formatting, colour helpers
-components/
-  Badge.js             # Status badge
-  Timestamp.js         # Relative time with exact time on hover
-  Pagination.js        # Page controls
-  EmptyState.js        # Empty state placeholder
-  Nav.js               # Top navigation (client — uses usePathname)
+
+Run `migrations/001_v2_tables.sql` once against the Supabase project (creates the append-only `dashboard_audit` table). The other tables are created and filled by the n8n automations.
+
+### Environment variables
+
+See [.env.example](.env.example). `AUTH_SECRET` is required in production; without it every request is sent to the login page.
+
+## Production checklist
+
+- [ ] All env vars set on the host; `AUTH_SECRET` is a long random value, `DASHBOARD_PASSWORD` is strong
+- [ ] `DASHBOARD_ALLOWED_EMAILS` set so only named people can sign in
+- [ ] Served over HTTPS (session cookie is `Secure` in production; HSTS header is sent)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` only exists server-side (never prefixed `NEXT_PUBLIC_`)
+- [ ] Uptime monitor pointed at `GET /api/health` (returns `{"status":"ok"}`, or 503 when the database is unreachable)
+- [ ] `npm run build` passes and `npm run lint` is clean
+
+## Security notes
+
+- Every page and server action requires a valid session (`proxy.js` + `requireActor()`).
+- Sign-in is rate limited (5 attempts per email and 10 per IP per 15 minutes, per server instance) and uses a constant-time password comparison. On serverless hosting the counters are per instance — put it behind a shared limiter if you need a hard guarantee.
+- Settings writes use a strict field allowlist with value validation; template, cadence and journey actions validate input server-side.
+- Responses carry `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy and `noindex`.
+- Every change made through the dashboard is written to `dashboard_audit`.
+- Approving a template records the typed approver name and the signed-in email; there is one shared password, so the name is not independently verified.
+
+## Operations notes
+
+- **Test mode / demo mode banner** shows at the top whenever SMS are redirected or demo timings are on.
+- **Demo "Advance"** calls `N8N_POLLER_RUN_URL`; it stops after 15 minutes or when the tab is hidden.
+- Pages are rendered on demand (`force-dynamic`) so data is always current.
+
+## Scripts
+
+```bash
+npm run dev     # development
+npm run build   # production build
+npm run start   # run the production build
+npm run lint    # eslint
 ```

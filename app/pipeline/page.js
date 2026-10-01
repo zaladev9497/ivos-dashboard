@@ -5,6 +5,7 @@ import EmptyState from '@/components/EmptyState'
 import { journeyTypeLabel, ageInDays } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Pipeline' }
 
 function groupBy(arr, key) {
   return arr.reduce((acc, item) => {

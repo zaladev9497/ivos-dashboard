@@ -21,6 +21,7 @@ import LeadActions from './LeadActions'
 import AdvanceButton from '@/components/AdvanceButton'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Lead' }
 
 export default async function LeadDetailPage({ params }) {
   const { id } = await params

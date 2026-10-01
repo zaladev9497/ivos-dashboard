@@ -1,13 +1,14 @@
 import Link from 'next/link'
-import { getAuditLogs } from '@/lib/queries'
+import { getAuditLogs, safePage } from '@/lib/queries'
 import Timestamp from '@/components/Timestamp'
 import EmptyState from '@/components/EmptyState'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Audit' }
 
 export default async function AuditPage({ searchParams }) {
   const params = await searchParams
-  const page = parseInt(params?.page ?? '1', 10)
+  const page = safePage(params?.page)
   const tableName = params?.table ?? ''
   const actor = params?.actor ?? ''
 

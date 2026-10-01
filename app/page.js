@@ -1,11 +1,12 @@
-import { getLeads } from '@/lib/queries'
+import { getLeads, safePage } from '@/lib/queries'
 import LeadsTable from './LeadsTable'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: { absolute: 'Leads · IVOS' } }
 
 export default async function LeadsPage({ searchParams }) {
   const params = await searchParams
-  const page = parseInt(params?.page ?? '1', 10)
+  const page = safePage(params?.page)
   const search = params?.search ?? ''
   const journeyType = params?.journey_type ?? ''
   const showTest = params?.show_test !== '0'

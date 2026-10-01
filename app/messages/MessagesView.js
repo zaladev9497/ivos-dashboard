@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Badge from '@/components/Badge'
 import Timestamp from '@/components/Timestamp'
@@ -32,6 +32,17 @@ export default function MessagesView({ tab, sentResult, scheduledResult, page, f
     const next = { ...localFilters, [key]: value }
     setLocalFilters(next)
     startTransition(() => router.push(buildUrl({ ...next, page: 1 })))
+  }
+
+  // Free-text filters update the box instantly but only query the database once typing pauses.
+  const debounceRef = useRef(null)
+  function setFilterDebounced(key, value) {
+    const next = { ...localFilters, [key]: value }
+    setLocalFilters(next)
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      startTransition(() => router.push(buildUrl({ ...next, page: 1 })))
+    }, 400)
   }
 
   function switchTab(t) {
@@ -111,7 +122,7 @@ export default function MessagesView({ tab, sentResult, scheduledResult, page, f
               <input
                 type="text"
                 value={localFilters.purpose}
-                onChange={(e) => setFilter('purpose', e.target.value)}
+                onChange={(e) => setFilterDebounced('purpose', e.target.value)}
                 placeholder="Purpose, e.g. quote_follow_up"
                 aria-label="Purpose"
                 className={`${field} w-52`}

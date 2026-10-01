@@ -3,6 +3,7 @@ import SettingsForm from './SettingsForm'
 import { formatDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Settings' }
 
 export default async function SettingsPage() {
   let calendar = null
