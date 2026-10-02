@@ -17,6 +17,8 @@ import {
 } from '@/lib/queries'
 import LeadSidebar from './LeadSidebar'
 import Timeline from './Timeline'
+import LeadMessages from './LeadMessages'
+import LeadTabs from './LeadTabs'
 import LeadActions from './LeadActions'
 import AdvanceButton from '@/components/AdvanceButton'
 
@@ -70,6 +72,11 @@ export default async function LeadDetailPage({ params }) {
   const templateLabels = {}
   for (const t of allTemplates) templateLabels[t.template_key] = t
 
+  // Tab badge: texts that actually moved, plus anything still queued to go.
+  const messageCount =
+    messages.length +
+    scheduledMessages.filter(sm => sm.state === 'pending' || sm.state === 'claimed').length
+
   return (
     <div className="page rise">
       {/* Breadcrumb + title. The lead's name is the page heading, set in the
@@ -88,19 +95,32 @@ export default async function LeadDetailPage({ params }) {
       {demoMode && <AdvanceButton pollIntervalSeconds={demoPollInterval} />}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
-        {/* Timeline */}
-        <Timeline
-          lead={lead}
-          journeys={journeys}
-          messages={messages}
-          scheduledMessages={scheduledMessages}
-          journeyEvents={journeyEvents}
-          leadEvents={leadEvents}
-          exceptions={exceptions}
-          ghEvents={ghEvents}
-          ghPromotion={ghPromotion}
-          ncOrders={ncOrders}
-          templateLabels={templateLabels}
+        {/* Timeline (everything that happened) and Messages (only what was
+            texted), behind a tab switch so the record stays one column. */}
+        <LeadTabs
+          messageCount={messageCount}
+          timeline={
+            <Timeline
+              lead={lead}
+              journeys={journeys}
+              messages={messages}
+              scheduledMessages={scheduledMessages}
+              journeyEvents={journeyEvents}
+              leadEvents={leadEvents}
+              exceptions={exceptions}
+              ghEvents={ghEvents}
+              ghPromotion={ghPromotion}
+              ncOrders={ncOrders}
+              templateLabels={templateLabels}
+            />
+          }
+          messages={
+            <LeadMessages
+              messages={messages}
+              scheduledMessages={scheduledMessages}
+              templateLabels={templateLabels}
+            />
+          }
         />
 
         {/* Sidebar */}
