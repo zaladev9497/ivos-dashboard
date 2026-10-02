@@ -12,6 +12,8 @@ const nextConfig = {
   // Lets CI / local checks build into a separate folder (NEXT_DIST_DIR=.next-check) without touching a running dev server.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
+  // The default bottom-left spot sits on top of the sidebar's Log out button.
+  devIndicators: { position: 'bottom-right' },
   reactStrictMode: true,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]

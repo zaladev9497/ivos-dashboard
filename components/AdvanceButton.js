@@ -135,14 +135,20 @@ export default function AdvanceButton({ pollIntervalSeconds = 10 }) {
         </label>
 
         <span
-          className="ml-auto text-[11.5px]"
+          className="ml-auto inline-flex items-center gap-1 text-[12px]"
           style={{
             color: count >= WARN_AT ? 'var(--tone-neg-ink)' : 'var(--ink-faint)',
             fontWeight: count >= WARN_AT ? 600 : 400,
           }}
         >
-          {count >= WARN_AT && '⚠ '}Demo runs: <span className="tabular">{count}</span>
-          {count >= WARN_AT && ' — near n8n limit'}
+          {count >= WARN_AT && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5 shrink-0" aria-hidden="true">
+              <path d="M12 8.5v4M12 16v.01" />
+              <path d="M10.3 4.2 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z" />
+            </svg>
+          )}
+          Demo runs: <span className="tabular">{count}</span>
+          {count >= WARN_AT && ', near the n8n limit'}
         </span>
       </div>
 

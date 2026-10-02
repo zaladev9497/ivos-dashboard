@@ -14,14 +14,14 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="page rise">
+    <div className="page rise" style={{ maxWidth: 920 }}>
       <header className="page-head">
         <div>
           <h1 className="page-title">Settings</h1>
-          <p className="page-lede">Business hours, cadence timing and delivery behaviour.</p>
+          <p className="page-lede">Business hours, quote timing and whether messages reach real customers.</p>
         </div>
         {calendar?.updated_at && (
-          <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
+          <span className="pb-0.5 text-[12px]" style={{ color: 'var(--ink-faint)' }}>
             Last updated {formatDate(calendar.updated_at)}
           </span>
         )}
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
 
       {!calendar && (
         <div
-          className="rounded-[7px] border px-3.5 py-2.5 text-[12.5px]"
+          className="rounded-[var(--radius)] border px-3.5 py-2.5 text-[12.5px]"
           style={{
             borderColor: 'var(--signal-warn-rule)',
             background: 'var(--signal-warn-soft)',

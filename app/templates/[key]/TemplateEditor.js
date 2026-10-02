@@ -1,113 +1,215 @@
 'use client'
 import { useState, useDeferredValue } from 'react'
 import Badge from '@/components/Badge'
-import { formatDate, templateLabel } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { smsInfo, typographicWarnings, validateMergeFields, applyPreview } from '@/lib/sms'
 import { saveTemplate, approveTemplate } from './actions'
 
 const TASK_CHANNELS = new Set(['task', 'internal'])
 
-// ─── SMS Counter ──────────────────────────────────────────────────────────────
-function SmsCounter({ body }) {
-  const info = smsInfo(body)
-  const warnings = typographicWarnings(body)
-  const { invalid } = validateMergeFields(body)
+function Notice({ tone, children }) {
+  return (
+    <div
+      className="flex items-start gap-2 rounded-[var(--radius)] border px-3 py-2 text-[12.5px] leading-relaxed"
+      style={{ borderColor: `var(--tone-${tone}-rule)`, background: `var(--tone-${tone}-soft)`, color: `var(--tone-${tone}-ink)` }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true">
+        {tone === 'pos'
+          ? <path d="M20 6L9 17l-5-5" />
+          : <><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></>}
+      </svg>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
+}
 
-  const segColor =
-    info.segments >= 3
-      ? '[color:var(--tone-neg-ink)]'
-      : info.segments === 2
-        ? '[color:var(--tone-warn-ink)]'
-        : '[color:var(--tone-pos-ink)]'
+// ─── SMS meter: one quiet line under the textarea ──────────────────────────────
+function SmsMeter({ body }) {
+  const info = smsInfo(body)
+  const segTone = info.segments >= 3 ? 'neg' : info.segments === 2 ? 'warn' : null
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-4 text-xs">
-        <span className="[color:var(--ink-muted)]">Encoding: <strong className="[color:var(--ink)]">{info.encoding}</strong></span>
-        <span className="[color:var(--ink-muted)]">Characters: <strong className="[color:var(--ink)]">{info.length}</strong></span>
-        <span className={`font-semibold ${segColor}`}>{info.segments} segment{info.segments !== 1 ? 's' : ''}</span>
-        <span className="[color:var(--ink-faint)]">{info.remaining >= 0 ? `${info.remaining} remaining in last segment` : `${Math.abs(info.remaining)} over capacity`}</span>
-      </div>
-      {warnings.map((w, i) => (
-        <div key={i} className="rounded bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-          ⚠ {w}
-        </div>
-      ))}
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+      <span>
+        <span className="tabular" style={{ color: 'var(--ink-secondary)' }}>{info.length}</span> characters
+      </span>
+      <span aria-hidden="true" style={{ color: 'var(--ink-faint)' }}>·</span>
+      <span
+        className={segTone ? 'font-semibold' : ''}
+        style={{ color: segTone ? `var(--tone-${segTone}-ink)` : 'var(--ink-secondary)' }}
+      >
+        {info.segments} segment{info.segments !== 1 ? 's' : ''}
+      </span>
+      <span aria-hidden="true" style={{ color: 'var(--ink-faint)' }}>·</span>
+      <span>{info.encoding}</span>
+      <span className="ml-auto" style={{ color: 'var(--ink-faint)' }}>
+        {info.remaining >= 0 ? `${info.remaining} left in segment` : `${Math.abs(info.remaining)} over`}
+      </span>
+    </div>
+  )
+}
+
+function SmsWarnings({ body }) {
+  const warnings = typographicWarnings(body)
+  const { invalid } = validateMergeFields(body)
+  if (!warnings.length && !invalid.length) return null
+  return (
+    <div className="space-y-1.5">
+      {warnings.map((w, i) => <Notice key={i} tone="warn">{w}</Notice>)}
       {invalid.length > 0 && (
-        <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
-          Unknown merge fields (will be rejected at send time): {invalid.map(f => `{{${f}}}`).join(', ')}
-        </div>
+        <Notice tone="neg">
+          Unknown merge fields, rejected at send time:{' '}
+          <span className="mono">{invalid.map((f) => `{{${f}}}`).join(', ')}</span>
+        </Notice>
       )}
     </div>
   )
 }
 
-// ─── Preview panel ─────────────────────────────────────────────────────────────
+// ─── Preview ───────────────────────────────────────────────────────────────────
 function Preview({ body, channel }) {
   const preview = applyPreview(body)
   const isSms = channel === 'sms'
   return (
-    <div className="h-full rounded-[9px] border p-3.5 [border-color:var(--rule)] [background:var(--paper-sunken)]">
-      <p className="eyebrow mb-2">Preview</p>
-      {isSms ? (
-        <div className="flex justify-end">
-          <div className="max-w-xs whitespace-pre-wrap rounded-2xl rounded-br-sm px-3 py-2 text-[12.5px] leading-relaxed [background:var(--accent)] [color:var(--on-signal)]">
-            {preview || <span className="opacity-40 italic">Start typing…</span>}
+    <section className="surface overflow-hidden">
+      <div className="section-head">
+        <span className="eyebrow">Preview</span>
+        <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>with sample data</span>
+      </div>
+      <div className="px-4 py-5" style={{ background: 'var(--paper-sunken)' }}>
+        {isSms ? (
+          <div className="flex justify-end">
+            <div
+              className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-[4px] px-3.5 py-2.5 text-[13px] leading-relaxed"
+              style={{ background: 'var(--accent)', color: 'var(--on-signal)' }}
+            >
+              {preview || <span className="italic opacity-60">Start typing…</span>}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="whitespace-pre-wrap rounded-md border px-3 py-2 text-[12.5px] leading-relaxed [border-color:var(--rule-faint)] [background:var(--paper-raised)] [color:var(--ink-secondary)]">
-          {preview || <span className="italic [color:var(--ink-faint)]">Start typing…</span>}
-        </div>
-      )}
-    </div>
+        ) : (
+          <div
+            className="whitespace-pre-wrap rounded-[var(--radius)] border px-3.5 py-2.5 text-[13px] leading-relaxed"
+            style={{ borderColor: 'var(--rule-faint)', background: 'var(--paper-raised)', color: 'var(--ink-secondary)' }}
+          >
+            {preview || <span className="italic" style={{ color: 'var(--ink-faint)' }}>Start typing…</span>}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
-// ─── History ──────────────────────────────────────────────────────────────────
+// ─── Approval: sits beside the content it approves ──────────────────────────────
+function ApprovalCard({ template, onResult }) {
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function approve(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setBusy(true)
+    const res = await approveTemplate({ templateId: template.id, templateKey: template.template_key, approverName: name })
+    setBusy(false)
+    onResult(res.error ? res : { approved: true })
+  }
+
+  return (
+    <section className="surface overflow-hidden" style={{ borderColor: 'var(--tone-warn-rule)' }}>
+      <div className="px-4 py-3.5">
+        <p className="text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>Approve v{template.version}</p>
+        <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+          Unapproved templates are never sent. Approval is kept separate from editing on purpose. Save any edits first.
+        </p>
+        <form onSubmit={approve} className="mt-3 flex gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Approver name"
+            aria-label="Approver name"
+            className="field min-w-0 flex-1"
+          />
+          <button type="submit" disabled={busy || !name.trim()} className="btn btn-primary">
+            {busy ? 'Approving…' : 'Approve'}
+          </button>
+        </form>
+      </div>
+    </section>
+  )
+}
+
+// ─── History ───────────────────────────────────────────────────────────────────
 function HistoryPanel({ history, auditLogs }) {
   const [open, setOpen] = useState(false)
   if (history.length <= 1) return null
   return (
-    <div className="surface overflow-hidden">
+    <section className="surface overflow-hidden">
       <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-1.5 eyebrow transition-colors hover:[background:var(--paper-hover)]"
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-[var(--paper-hover)]"
       >
-        <span>Version history ({history.length})</span>
-        <span>{open ? '▲' : '▼'}</span>
+        <span className="text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
+          Version history
+          <span className="tabular ml-2 font-normal" style={{ color: 'var(--ink-faint)' }}>{history.length}</span>
+        </span>
+        <svg
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className={`h-4 w-4 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--ink-faint)' }}
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
       {open && (
-        <div className="divide-y [border-color:var(--rule-faint)]">
-          {history.map(h => {
-            const audit = auditLogs.find(a => a.row_id === h.id)
+        <ol className="divide-y divide-[var(--rule-faint)] border-t" style={{ borderColor: 'var(--rule-faint)' }}>
+          {history.map((h) => {
+            const audit = auditLogs.find((a) => a.row_id === h.id)
             return (
-              <div key={h.id} className="px-3 py-2 text-sm">
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="mono text-[11.5px] [color:var(--ink-muted)]">v{h.version}</span>
-                  {h.is_active && <Badge label="current" status="sent" />}
-                  {h.approved ? <Badge label="approved" status="sent" /> : <Badge label="not approved" status="failed" />}
-                  {audit && <span className="text-[11.5px] [color:var(--ink-faint)]">{audit.actor} · {formatDate(audit.occurred_at)}</span>}
+              <li key={h.id} className="px-4 py-3">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <span className="tabular text-[12.5px] font-semibold" style={{ color: 'var(--ink)' }}>v{h.version}</span>
+                  {h.is_active && <Badge label="Current" status="active" dot={false} />}
+                  {!h.approved && <Badge label="Not approved" status="medium" dot={false} />}
+                  {audit && (
+                    <span className="ml-auto text-[12px]" style={{ color: 'var(--ink-faint)' }}>
+                      {audit.actor} · {formatDate(audit.occurred_at)}
+                    </span>
+                  )}
                 </div>
-                <pre className="mono max-h-24 overflow-y-auto whitespace-pre-wrap rounded px-2 py-1.5 text-[11px] [background:var(--paper-sunken)] [color:var(--ink-secondary)]">{h.body}</pre>
-                {audit?.note && <p className="text-[11.5px] [color:var(--ink-faint)] mt-1">{audit.note}</p>}
-              </div>
+                <p
+                  className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded-[var(--radius-sm)] px-2.5 py-2 text-[12.5px] leading-relaxed"
+                  style={{ background: 'var(--paper-sunken)', color: 'var(--ink-secondary)' }}
+                >
+                  {h.body}
+                </p>
+                {audit?.note && <p className="mt-1 text-[12px]" style={{ color: 'var(--ink-faint)' }}>{audit.note}</p>}
+              </li>
             )
           })}
-        </div>
+        </ol>
       )}
-    </div>
+    </section>
   )
 }
 
-// ─── Main editor ──────────────────────────────────────────────────────────────
+function Label({ htmlFor, children, hint }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1.5 flex items-baseline justify-between gap-2">
+      <span className="text-[12.5px] font-medium" style={{ color: 'var(--ink-secondary)' }}>{children}</span>
+      {hint && <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>{hint}</span>}
+    </label>
+  )
+}
+
+// ─── Main editor ───────────────────────────────────────────────────────────────
 export default function TemplateEditor({ template, history, auditLogs }) {
   const [body, setBody] = useState(template.body ?? '')
   const [taskTitle, setTaskTitle] = useState(template.task_title ?? '')
   const [notes, setNotes] = useState(template.notes ?? '')
-  const [approverName, setApproverName] = useState('')
   const [saving, setSaving] = useState(false)
-  const [approving, setApproving] = useState(false)
   const [result, setResult] = useState(null)
   const deferredBody = useDeferredValue(body)
   const isTask = TASK_CHANNELS.has(template.channel)
@@ -120,120 +222,100 @@ export default function TemplateEditor({ template, history, auditLogs }) {
     setResult(res)
   }
 
-  async function handleApprove() {
-    if (!approverName.trim()) { setResult({ error: 'Enter the approver name.' }); return }
-    setApproving(true); setResult(null)
-    const res = await approveTemplate({ templateId: template.id, templateKey: template.template_key, approverName })
-    setApproving(false)
-    setResult(res)
+  function discard() {
+    setBody(template.body ?? ''); setTaskTitle(template.task_title ?? ''); setNotes(template.notes ?? '')
+    setResult(null)
   }
 
   return (
-    <div className="space-y-1.5">
-      {/* Unapproved banner */}
-      {!template.approved && (
-        <div className="rounded-md border px-3.5 py-2.5 text-[12.5px] [border-color:var(--signal-warn-rule)] [background:var(--signal-warn-soft)] [color:var(--tone-warn-ink)]">
-          <strong>Not approved.</strong> Unapproved templates are not sent by the automation. Save your edits first, then have someone mark it approved below.
-        </div>
-      )}
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-5">
+        <section className="surface overflow-hidden">
+          <div className="space-y-4 px-5 py-4">
+            {isTask && (
+              <div>
+                <Label htmlFor="tpl-title">Task title</Label>
+                <input
+                  id="tpl-title"
+                  type="text"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  className="field w-full"
+                  placeholder="Task title shown in Jobber"
+                />
+              </div>
+            )}
 
-      {/* Meta */}
-      <div className="surface px-3 py-2 flex flex-wrap items-center gap-4 text-sm">
-        <span className="font-semibold [color:var(--ink)]">{templateLabel(template.template_key)}</span>
-        <span className="mono text-[11.5px] [color:var(--ink-faint)]">{template.template_key}</span>
-        <Badge label={template.channel} status={template.channel === 'sms' ? 'sent' : 'pending'} />
-        <span className="tabular [color:var(--ink-faint)]">v{template.version}</span>
-        {template.approved ? <Badge label="Approved" status="sent" /> : <Badge label="Not approved" status="failed" />}
-      </div>
-
-      {/* Result banner */}
-      {result && (
-        <div className={`rounded px-3 py-2 text-sm ${result.error ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
-          {result.error ?? `Saved as v${result.version}. Template requires re-approval before it will send.`}
-        </div>
-      )}
-
-      {/* Editor + Preview */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {/* Left: editing */}
-        <div className="space-y-1.5">
-          {isTask && (
             <div>
-              <label className="eyebrow mb-1.5 block">Task title</label>
+              <Label htmlFor="tpl-body" hint="Merge fields use {{double_braces}}">
+                {isTask ? 'Task body' : 'Message'}
+              </Label>
+              <textarea
+                id="tpl-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={9}
+                className="field h-auto w-full resize-y py-2.5 text-[13.5px] leading-relaxed"
+                placeholder="Message body…"
+              />
+              {!isTask && <div className="mt-2"><SmsMeter body={deferredBody} /></div>}
+            </div>
+
+            {!isTask && <SmsWarnings body={deferredBody} />}
+
+            <div>
+              <Label htmlFor="tpl-notes" hint="Internal only, never sent">Notes</Label>
               <input
+                id="tpl-notes"
                 type="text"
-                value={taskTitle}
-                onChange={e => setTaskTitle(e.target.value)}
-                className="field h-9 w-full"
-                placeholder="Task title shown in Jobber"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="field w-full"
+                placeholder="Context for the team"
               />
             </div>
-          )}
-          <div>
-            <label className="eyebrow mb-1.5 block">
-              {isTask ? 'Task body' : 'SMS body'}
-            </label>
-            <textarea
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              rows={8}
-              className="field mono w-full resize-y py-2 leading-relaxed"
-              placeholder="Message body…"
-            />
           </div>
-          {!isTask && <SmsCounter body={deferredBody} />}
-          <div>
-            <label className="eyebrow mb-1.5 block">Notes (internal)</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              className="field h-9 w-full"
-              placeholder="Optional notes for the team"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSave}
-              disabled={saving || !dirty}
-              className="btn btn-primary"
-            >
-              {saving ? 'Saving…' : 'Save (bumps version)'}
-            </button>
-            {!dirty && <span className="text-[11.5px] [color:var(--ink-faint)]">No changes</span>}
-          </div>
-        </div>
 
-        {/* Right: preview */}
-        <Preview body={deferredBody} channel={template.channel} />
+          {/* Footer: what saving does, said next to the button that does it. */}
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-3"
+            style={{ borderColor: 'var(--rule-faint)', background: 'var(--paper-sunken)' }}
+          >
+            <p className="text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+              {dirty
+                ? `Saving creates v${template.version + 1}, which will need approval.`
+                : 'No unsaved changes.'}
+            </p>
+            <div className="flex items-center gap-2">
+              {dirty && (
+                <button type="button" onClick={discard} className="btn btn-ghost">Discard</button>
+              )}
+              <button type="button" onClick={handleSave} disabled={saving || !dirty} className="btn btn-primary">
+                {saving ? 'Saving…' : 'Save new version'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {result && (
+          <div role="status">
+            {result.error ? (
+              <Notice tone="neg">{result.error}</Notice>
+            ) : result.approved ? (
+              <Notice tone="pos">Approved. The automation can now send this version.</Notice>
+            ) : (
+              <Notice tone="pos">Saved as v{result.version}. It needs approval before it will send.</Notice>
+            )}
+          </div>
+        )}
+
+        <HistoryPanel history={history} auditLogs={auditLogs} />
       </div>
 
-      {/* Approve section — separate from save, intentionally */}
-      {!template.approved && (
-        <div className="surface px-4 py-4 space-y-1.5">
-          <p className="text-[13px] font-medium [color:var(--ink)]">Mark as approved</p>
-          <p className="text-[11.5px] [color:var(--ink-muted)]">Approval and editing are intentionally separate actions. Approving the current version (v{template.version}) allows the automation to send it. Enter the approver&apos;s name.</p>
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={approverName}
-              onChange={e => setApproverName(e.target.value)}
-              placeholder="Approver name"
-              className="field h-9 w-48"
-            />
-            <button
-              onClick={handleApprove}
-              disabled={approving || !approverName.trim()}
-              className="btn btn-primary"
-            >
-              {approving ? 'Approving…' : 'Mark approved'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* History */}
-      <HistoryPanel history={history} auditLogs={auditLogs} />
+      <div className="space-y-4">
+        <Preview body={deferredBody} channel={template.channel} />
+        {!template.approved && <ApprovalCard template={template} onResult={setResult} />}
+      </div>
     </div>
   )
 }

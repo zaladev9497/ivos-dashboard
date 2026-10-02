@@ -44,43 +44,28 @@ function isValidTimezone(tz) {
 
 /* ── Layout primitives ───────────────────────────────────────────────────── */
 
-function Section({ title, description, tone, children, footer, className = '' }) {
-  const danger = tone === 'danger'
+function Section({ title, description, note, children, footer }) {
   return (
-    <section
-      className={`surface flex flex-col overflow-hidden ${className}`}
-      style={danger ? { borderColor: 'var(--signal-neg-rule)' } : undefined}
-    >
-      <header
-        className="border-b px-5 py-4"
-        style={{
-          borderColor: danger ? 'var(--signal-neg-rule)' : 'var(--rule-faint)',
-          background: danger ? 'var(--signal-neg-soft)' : 'transparent',
-        }}
-      >
-        <h2
-          className="text-[13.5px] font-semibold"
-          style={{ color: danger ? 'var(--tone-neg-ink)' : 'var(--ink)' }}
-        >
-          {title}
-        </h2>
+    <section className="surface flex flex-col overflow-hidden">
+      <header className="border-b px-5 py-4" style={{ borderColor: 'var(--rule-faint)' }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-[14px] font-semibold" style={{ color: 'var(--ink)' }}>{title}</h2>
+          {note}
+        </div>
         {description && (
-          <p
-            className="mt-1 text-[12px] leading-relaxed"
-            style={{ color: danger ? 'var(--tone-neg-ink)' : 'var(--ink-muted)' }}
-          >
+          <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
             {description}
           </p>
         )}
       </header>
 
-      <div className="flex-1 divide-y" style={{ borderColor: 'var(--rule-faint)' }}>
+      <div className="flex-1 divide-y divide-[var(--rule-faint)]">
         {children}
       </div>
 
       {footer && (
         <div
-          className="flex flex-wrap items-center gap-3 border-t px-5 py-3.5"
+          className="flex flex-wrap items-center gap-3 border-t px-5 py-3"
           style={{ borderColor: 'var(--rule-faint)', background: 'var(--paper-sunken)' }}
         >
           {footer}
@@ -102,7 +87,7 @@ function Field({ label, hint, htmlFor, error, children }) {
           {label}
         </label>
         {hint && (
-          <p className="mt-1 text-[11.5px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
+          <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--ink-muted)' }}>
             {hint}
           </p>
         )}
@@ -380,20 +365,15 @@ export default function SettingsForm({ calendar }) {
     <div className="space-y-5">
       {/* ── Live delivery status ──────────────────────────────────────── */}
       <div
-        className="flex items-start gap-3 rounded-[9px] border px-4 py-3.5"
+        role="status"
+        className="flex items-start gap-3 rounded-[var(--radius-lg)] border px-4 py-3"
         style={{
           borderColor: isTestActive ? 'var(--signal-warn-rule)' : 'var(--signal-neg-rule)',
           background: isTestActive ? 'var(--signal-warn-soft)' : 'var(--signal-neg-soft)',
           color: isTestActive ? 'var(--tone-warn-ink)' : 'var(--tone-neg-ink)',
         }}
       >
-        <span className="relative mt-1 flex h-2 w-2 shrink-0" aria-hidden="true">
-          <span
-            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-            style={{ background: 'currentColor' }}
-          />
-          <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: 'currentColor' }} />
-        </span>
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: 'currentColor' }} aria-hidden="true" />
         <div className="text-[12.5px] leading-relaxed">
           <strong className="font-semibold">
             {isTestActive ? 'Test mode is active.' : 'Live — real customers are receiving messages.'}
@@ -403,7 +383,7 @@ export default function SettingsForm({ calendar }) {
               {calendar?.sms_redirect_to && (
                 <>All SMS are redirected to <code className="mono">{calendar.sms_redirect_to}</code>. </>
               )}
-              {calendar?.test_only && <><code className="mono">test_only</code> is set. </>}
+              {calendar?.test_only && <>Test-only mode is on. </>}
               Real customers are not receiving messages.
             </>
           ) : (
@@ -412,11 +392,9 @@ export default function SettingsForm({ calendar }) {
         </div>
       </div>
 
-      <div className="grid-12">
       {/* ── Schedule ──────────────────────────────────────────────────── */}
       <Section
-        className="span-7 span-stretch"
-        title="Business hours & working days"
+        title="Business hours"
         description="Follow-ups are only sent inside these hours, in this timezone."
         footer={
           <>
@@ -490,11 +468,11 @@ export default function SettingsForm({ calendar }) {
                   aria-pressed={on}
                   aria-label={full}
                   onClick={() => toggleDay(n)}
-                  className="rounded-lg border px-3 py-1.5 text-[12.5px] font-medium transition-colors"
+                  className="h-8 w-12 rounded-[var(--radius)] border text-[12.5px] font-medium transition-colors"
                   style={
                     on
-                      ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-signal)' }
-                      : { background: 'var(--paper-raised)', borderColor: 'var(--rule)', color: 'var(--ink-muted)' }
+                      ? { background: 'var(--accent-soft)', borderColor: 'var(--accent-rule)', color: 'var(--accent-ink)' }
+                      : { background: 'var(--paper-raised)', borderColor: 'var(--rule)', color: 'var(--ink-faint)' }
                   }
                 >
                   {label}
@@ -507,7 +485,6 @@ export default function SettingsForm({ calendar }) {
 
       {/* ── Quote validity ────────────────────────────────────────────── */}
       <Section
-        className="span-5 span-stretch"
         title="Quote validity"
         description="How long a sent quote stays live before follow-ups stop."
         footer={
@@ -552,15 +529,9 @@ export default function SettingsForm({ calendar }) {
 
       {/* ── Delivery controls ─────────────────────────────────────────── */}
       <Section
-        className="span-12"
-        tone="danger"
         title="Delivery controls"
-        description="These decide whether real customers receive messages. Changes are confirmed and written to the audit log."
-        footer={
-          <span className="text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>
-            Every change here is recorded in the audit log.
-          </span>
-        }
+        note={<span className="text-[12px] font-medium" style={{ color: 'var(--tone-neg-ink)' }}>Affects real customers</span>}
+        description="Whether messages reach real phones. Risky changes ask for confirmation, and every change is written to the audit log."
       >
         <Field
           label="SMS redirect"
@@ -600,7 +571,7 @@ export default function SettingsForm({ calendar }) {
               label="Test-only mode"
             />
             <span className="text-[12.5px]" style={{ color: 'var(--ink-secondary)' }}>
-              {testOnly ? 'ON — no real messages are sent' : 'OFF — real messages will be sent'}
+              {testOnly ? 'On. Nothing is sent to customers.' : 'Off. Messages are sent to real customers.'}
             </span>
             <SaveState state={status.testOnly} />
           </div>
@@ -620,7 +591,7 @@ export default function SettingsForm({ calendar }) {
                 label="Demo mode"
               />
               <span className="text-[12.5px]" style={{ color: 'var(--ink-secondary)' }}>
-                {demoMode ? 'ON — timings compressed to minutes' : 'OFF'}
+                {demoMode ? 'On. Timings are compressed to minutes.' : 'Off'}
               </span>
               {!testOnly && !demoMode && (
                 <span className="text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
@@ -631,10 +602,10 @@ export default function SettingsForm({ calendar }) {
             </div>
 
             <div
-              className="rounded-lg px-3.5 py-3"
-              style={{ background: 'var(--paper-sunken)', opacity: demoMode ? 1 : 0.6 }}
+              className="rounded-[var(--radius)] border px-3.5 py-3"
+              style={{ background: 'var(--paper-sunken)', borderColor: 'var(--rule-faint)', opacity: demoMode ? 1 : 0.6 }}
             >
-              <label htmlFor="poll" className="eyebrow mb-1.5 block">Poller interval</label>
+              <label htmlFor="poll" className="mb-1.5 block text-[12px] font-medium" style={{ color: 'var(--ink-secondary)' }}>Poller interval</label>
               <div className="flex flex-wrap items-center gap-2">
                 <input
                   id="poll"
@@ -671,7 +642,6 @@ export default function SettingsForm({ calendar }) {
           </div>
         </Field>
       </Section>
-      </div>
 
       <ConfirmDialog
         open={!!confirm}

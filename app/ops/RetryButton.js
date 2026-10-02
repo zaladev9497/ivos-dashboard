@@ -17,21 +17,12 @@ export default function RetryButton({ id }) {
   }
 
   return (
-    <div>
-      <button
-        onClick={handleRetry}
-        disabled={saving}
-        className="btn h-6 px-2 text-[11px]"
-        style={{
-          background: 'transparent',
-          border: '1px solid var(--signal-info-rule)',
-          color: 'var(--tone-info-ink)',
-        }}
-      >
-        {saving ? '…' : 'Retry'}
+    <div className="inline-flex flex-col items-end">
+      <button onClick={handleRetry} disabled={saving} className="btn btn-quiet h-7 px-2.5 text-[12px]">
+        {saving ? 'Retrying…' : 'Retry'}
       </button>
       {error && (
-        <p className="mt-0.5 text-[11px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
+        <p className="mt-0.5 text-[11.5px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
       )}
     </div>
   )

@@ -75,7 +75,7 @@ export default function Nav() {
       }`}
       style={{
         borderColor: 'var(--rule)',
-        background: 'linear-gradient(to bottom, var(--paper-raised), var(--paper-sunken))',
+        background: 'var(--paper-raised)',
       }}
     >
       {/* Wordmark */}
@@ -99,7 +99,7 @@ export default function Nav() {
         </button>
       </div>
 
-      <div className="rule-fade mx-2.5 shrink-0" />
+      <div className="mx-2.5 h-px shrink-0" style={{ background: 'var(--rule-faint)' }} />
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3">
         {groups.map((group, gi) => (

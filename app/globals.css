@@ -685,10 +685,13 @@ table, .tabular-nums, [class*='tabular'] {
 .tabs {
   display: flex;
   gap: 1.25rem;
-  border-bottom: 1px solid var(--rule);
+  /* Hairline as an inset shadow, so the active underline can sit inside the
+     strip and survive overflow-x: auto on narrow screens. */
+  box-shadow: inset 0 -1px 0 var(--rule);
+  scrollbar-width: none;
 }
 
-.tabs button {
+.tabs button, .tabs a {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -700,22 +703,22 @@ table, .tabular-nums, [class*='tabular'] {
   transition: color 150ms ease;
 }
 
-.tabs button:hover { color: var(--ink); }
+.tabs button:hover, .tabs a:hover { color: var(--ink); }
 
-.tabs button[aria-selected='true'] { color: var(--ink); font-weight: 600; }
+.tabs button[aria-selected='true'], .tabs a[aria-current='page'] { color: var(--ink); font-weight: 600; }
 
-.tabs button[aria-selected='true']::after {
+.tabs button[aria-selected='true']::after, .tabs a[aria-current='page']::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: var(--accent);
 }
 
-.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.tabs button:focus-visible, .tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 /* ── Switch ─────────────────────────────────────────────────────────────── */
 .switch {

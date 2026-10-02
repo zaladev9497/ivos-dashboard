@@ -27,57 +27,49 @@ export default function ExceptionActions({ id, state }) {
   }
 
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {state === 'open' && (
-          <button onClick={handleAck} disabled={saving} className="btn btn-quiet h-6 px-2 text-[11px]">
-            Ack
+    <div className="flex flex-col items-end gap-1.5">
+      {!resolveOpen ? (
+        <div className="flex items-center gap-1.5">
+          {state === 'open' && (
+            <button onClick={handleAck} disabled={saving} className="btn btn-ghost h-7 px-2.5 text-[12px]">
+              Acknowledge
+            </button>
+          )}
+          <button onClick={() => setResolveOpen(true)} className="btn btn-quiet h-7 px-2.5 text-[12px]">
+            Resolve
           </button>
-        )}
-        <button
-          onClick={() => setResolveOpen(v => !v)}
-          className="btn h-6 px-2 text-[11px]"
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--signal-pos-rule)',
-            color: 'var(--tone-pos-ink)',
-          }}
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleResolve() }}
+          className="flex items-center gap-1.5"
         >
-          Resolve
-        </button>
-      </div>
-      {resolveOpen && (
-        <div className="mt-1.5 flex items-center gap-1.5">
           <input
             type="text"
             value={note}
             onChange={e => setNote(e.target.value)}
-            placeholder="Resolution note (optional)"
-            className="field h-6 w-48 text-[11.5px]"
+            placeholder="Note (optional)"
+            aria-label="Resolution note"
+            autoFocus
+            className="field h-7 w-40 text-[12px]"
           />
-          <button
-            onClick={handleResolve}
-            disabled={saving}
-            className="btn h-6 px-2 text-[11px]"
-            style={{
-              background: 'var(--signal-pos)',
-              border: '1px solid var(--signal-pos)',
-              color: 'var(--on-signal)',
-            }}
-          >
-            {saving ? '…' : 'Save'}
+          <button type="submit" disabled={saving} className="btn btn-primary h-7 px-2.5 text-[12px]">
+            {saving ? 'Saving…' : 'Resolve'}
           </button>
           <button
-            onClick={() => setResolveOpen(false)}
-            className="btn btn-ghost h-6 w-6 p-0! text-[11px]"
-            aria-label="Dismiss"
+            type="button"
+            onClick={() => { setResolveOpen(false); setError(null) }}
+            className="btn btn-ghost h-7 w-7 p-0!"
+            aria-label="Cancel"
           >
-            ✕
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
-        </div>
+        </form>
       )}
       {error && (
-        <p className="text-[11px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
+        <p className="text-[11.5px]" style={{ color: 'var(--tone-neg-ink)' }}>{error}</p>
       )}
     </div>
   )

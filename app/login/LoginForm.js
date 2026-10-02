@@ -9,6 +9,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Only follow same-site relative paths after sign-in (prevents open redirects).
   const from = params.get('from')
@@ -43,7 +44,7 @@ export default function LoginForm() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-[5px] border px-3 py-2 text-[12.5px]"
+          className="flex items-start gap-2 rounded-[var(--radius)] border px-3 py-2 text-[12.5px]"
           style={{
             borderColor: 'var(--signal-neg-rule)',
             background: 'var(--signal-neg-soft)',
@@ -59,7 +60,7 @@ export default function LoginForm() {
       )}
 
       <div>
-        <label htmlFor="email" className="eyebrow mb-1.5 block">Email</label>
+        <label htmlFor="email" className="mb-1.5 block text-[12.5px] font-medium" style={{ color: 'var(--ink-secondary)' }}>Email</label>
         <input
           id="email" name="email" type="email" required autoFocus
           autoComplete="username" inputMode="email" spellCheck={false}
@@ -69,13 +70,24 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="eyebrow mb-1.5 block">Password</label>
-        <input
-          id="password" name="password" type="password" required
-          autoComplete="current-password"
-          value={password} onChange={(e) => setPassword(e.target.value)}
-          className="field h-9 w-full" placeholder="••••••••••"
-        />
+        <label htmlFor="password" className="mb-1.5 block text-[12.5px] font-medium" style={{ color: 'var(--ink-secondary)' }}>Password</label>
+        <div className="relative">
+          <input
+            id="password" name="password" type={showPassword ? 'text' : 'password'} required
+            autoComplete="current-password"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+            className="field h-9 w-full pr-16"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-pressed={showPassword}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-[12px] font-medium transition-colors hover:text-[var(--ink)]"
+            style={{ color: 'var(--ink-muted)' }}
+          >
+            {showPassword ? 'Hide' : 'Show'}
+          </button>
+        </div>
       </div>
 
       <button type="submit" disabled={loading} className="btn btn-primary mt-1 h-9 w-full">

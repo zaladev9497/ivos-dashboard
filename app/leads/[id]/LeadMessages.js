@@ -1,7 +1,6 @@
 'use client'
-import Badge from '@/components/Badge'
 import EmptyState from '@/components/EmptyState'
-import { formatDayHeading, formatTime, formatDayFull, relativeTime, templateLabel } from '@/lib/utils'
+import { formatDayHeading, formatTime, formatDayFull, relativeTime, templateLabel, stageLabel } from '@/lib/utils'
 
 // ─── Build the SMS thread ─────────────────────────────────────────────────────
 //
@@ -138,35 +137,31 @@ function Bubble({ item }) {
   // is still ours but did not land, so it drops to a tinted outline instead of
   // claiming the confident accent.
   const plain = inbound || item.redirected || item.failed
-
   const tone = item.failed ? 'neg' : item.redirected ? 'warn' : null
 
   const bubbleStyle = plain
     ? {
         background: tone ? `var(--tone-${tone}-soft)` : 'var(--paper-sunken)',
         border: `1px solid ${tone ? `var(--tone-${tone}-rule)` : 'var(--rule-faint)'}`,
-        color: 'var(--ink-secondary)',
-        [inbound ? 'borderBottomLeftRadius' : 'borderBottomRightRadius']: 3,
+        color: 'var(--ink)',
+        [inbound ? 'borderBottomLeftRadius' : 'borderBottomRightRadius']: 4,
       }
     : {
         background: 'var(--accent)',
         color: 'var(--on-signal)',
-        borderBottomRightRadius: 3,
+        borderBottomRightRadius: 4,
       }
+
+  // Delivery note, only when something went wrong.
+  const note = item.error
+    ? { text: item.error, tone: 'neg' }
+    : item.redirected
+      ? { text: 'Redirected to the test number. The customer did not get this.', tone: 'warn' }
+      : null
 
   return (
     <div className={`flex flex-col ${inbound ? 'items-start' : 'items-end'} gap-1`}>
-      {/* Who / which template, above the bubble so the body stays clean. */}
-      <div className="flex max-w-[82%] flex-wrap items-center gap-1.5 px-0.5">
-        <span className="text-[11.5px] font-semibold" style={{ color: 'var(--ink-muted)' }}>
-          {item.title}
-        </span>
-        {item.status && item.status !== 'sent' && (
-          <Badge label={item.status} status={item.status} />
-        )}
-      </div>
-
-      <div className="max-w-[82%] rounded-[11px] px-3.5 py-2.5 text-[12.5px]" style={bubbleStyle}>
+      <div className="max-w-[78%] rounded-2xl px-3.5 py-2.5 text-[13px]" style={bubbleStyle}>
         {item.body ? (
           <p className="leading-relaxed whitespace-pre-wrap wrap-break-word">{item.body}</p>
         ) : (
@@ -174,24 +169,24 @@ function Bubble({ item }) {
         )}
       </div>
 
-      {item.error && (
-        <p className="max-w-[82%] px-0.5 text-[11.5px]" style={{ color: 'var(--tone-neg-ink)' }}>
-          {item.error}
-        </p>
-      )}
-      {item.redirected && !item.error && (
-        <p className="max-w-[82%] px-0.5 text-[11.5px]" style={{ color: 'var(--tone-warn-ink)' }}>
-          Redirected to test number — the customer did not receive this.
-        </p>
-      )}
+      {/* One meta line: which message, when, and its state if not plain "sent". */}
+      <p className="flex max-w-[78%] flex-wrap items-center gap-x-1.5 px-1 text-[11.5px]" style={{ color: 'var(--ink-faint)' }}>
+        {!inbound && <span style={{ color: 'var(--ink-muted)' }}>{item.title}</span>}
+        {!inbound && <span aria-hidden="true">·</span>}
+        <time dateTime={item.ts} className="tabular">{formatTime(item.ts)}</time>
+        {item.status && !['sent', 'delivered', 'received'].includes(item.status) && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span style={{ color: tone ? `var(--tone-${tone}-ink)` : 'var(--ink-muted)' }}>{stageLabel(item.status)}</span>
+          </>
+        )}
+      </p>
 
-      <time
-        dateTime={item.ts}
-        className="tabular px-0.5 text-[10.5px]"
-        style={{ color: 'var(--ink-faint)' }}
-      >
-        {formatTime(item.ts)}
-      </time>
+      {note && (
+        <p className="max-w-[78%] px-1 text-[11.5px]" style={{ color: `var(--tone-${note.tone}-ink)` }}>
+          {note.text}
+        </p>
+      )}
     </div>
   )
 }
@@ -204,93 +199,81 @@ export default function LeadMessages(props) {
 
   return (
     <div className="space-y-4">
-      {/* Queued sends, kept above the thread — they are the next thing that
-          will happen, not part of what was said. */}
+      {/* Queued sends, above the thread: they are the next thing that will
+          happen, not part of what was said. */}
       {upcoming.length > 0 && (
-        <section
-          className="overflow-hidden rounded-[11px] border"
-          style={{ borderColor: 'var(--signal-info-rule)', background: 'var(--signal-info-soft)' }}
-        >
-          <div
-            className="flex items-center justify-between border-b px-5 py-3"
-            style={{ borderColor: 'var(--signal-info-rule)' }}
-          >
-            <span className="eyebrow" style={{ color: 'var(--tone-info-ink)' }}>Queued to send</span>
-            <span
-              className="counter"
-              style={{ background: 'transparent', borderColor: 'var(--signal-info-rule)', color: 'var(--tone-info-ink)' }}
-            >
-              {upcoming.length}
+        <section className="surface overflow-hidden">
+          <div className="section-head">
+            <span className="text-[13px] font-semibold" style={{ color: 'var(--ink)' }}>
+              Up next
+              <span className="tabular ml-2 font-normal" style={{ color: 'var(--ink-faint)' }}>{upcoming.length}</span>
             </span>
           </div>
-          <div className="divide-y px-5" style={{ borderColor: 'var(--signal-info-rule)' }}>
+          <ul className="divide-y divide-[var(--rule-faint)]">
             {upcoming.map(item => (
-              <div key={item.id} className="flex items-start justify-between gap-3 py-2.5">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  <span className="text-[13px] font-semibold leading-snug" style={{ color: 'var(--ink)' }}>
-                    {item.title}
-                  </span>
-                  <Badge label={item.status} status={item.status} />
+              <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--tone-info-ink)' }} aria-hidden="true">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 7.5V12l3 2" />
+                  </svg>
+                  <span className="truncate text-[13px]" style={{ color: 'var(--ink)' }}>{item.title}</span>
+                  {item.status === 'claimed' && (
+                    <span className="text-[12px]" style={{ color: 'var(--tone-info-ink)' }}>Sending</span>
+                  )}
                 </div>
                 <time dateTime={item.ts} className="shrink-0 text-right leading-tight">
                   {item.demoMode ? (
                     <>
-                      <span className="block text-[11.5px] font-medium" style={{ color: 'var(--signal-alt)' }}>
+                      <span className="block text-[12px] font-medium" style={{ color: 'var(--signal-alt)' }}>
                         {relativeTime(item.ts)}
                       </span>
                       {item.productionDue && (
-                        <span className="block text-[10px]" style={{ color: 'var(--ink-faint)' }}>
+                        <span className="block text-[10.5px]" style={{ color: 'var(--ink-faint)' }}>
                           Prod: {formatDayFull(item.productionDue)}
                         </span>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="tabular block text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>
+                      <span className="tabular block text-[12px]" style={{ color: 'var(--ink-secondary)' }}>
                         {formatDayFull(item.ts)}
                       </span>
-                      <span className="block text-[10.5px]" style={{ color: 'var(--ink-faint)' }}>
+                      <span className="block text-[11px]" style={{ color: 'var(--ink-faint)' }}>
                         {relativeTime(item.ts)}
                       </span>
                     </>
                   )}
                 </time>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
-      <section className="surface overflow-hidden">
-        <div className="section-head">
-          <span className="eyebrow">Conversation</span>
-          {sent.length > 0 && <span className="counter">{sent.length}</span>}
-        </div>
-
+      {/* The tab already names this panel, so it opens straight on the thread. */}
+      <section className="surface overflow-hidden" aria-label="Conversation">
         {sent.length === 0 ? (
           <EmptyState
             title="No messages yet"
             description="Sent texts and customer replies appear here as the journey runs."
           />
         ) : (
-          dayGroups.map(({ key, items }) => (
-            <div key={key}>
-              <div
-                className="sticky top-0 z-10 border-y px-5 py-2 backdrop-blur-sm"
-                style={{
-                  borderColor: 'var(--rule-faint)',
-                  background: 'color-mix(in oklab, var(--paper-sunken) 88%, transparent)',
-                }}
-              >
-                <span className="eyebrow">{key}</span>
-              </div>
-              <div className="space-y-3.5 px-5 py-4">
+          <div className="space-y-5 px-5 py-5">
+            {dayGroups.map(({ key, items }) => (
+              <div key={key} className="space-y-3.5">
+                {/* Centred day divider, as in any messaging app. */}
+                <div className="flex items-center gap-3" role="separator" aria-label={key}>
+                  <span className="h-px flex-1" style={{ background: 'var(--rule-faint)' }} />
+                  <span className="text-[11.5px] font-medium" style={{ color: 'var(--ink-faint)' }}>{key}</span>
+                  <span className="h-px flex-1" style={{ background: 'var(--rule-faint)' }} />
+                </div>
                 {items.map(item => (
                   <Bubble key={item.id} item={item} />
                 ))}
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </section>
     </div>
