@@ -19,9 +19,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-fraunces);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
 }
 
 :root {
@@ -266,6 +265,7 @@
 
 /* ═══ Base ═══════════════════════════════════════════════════════════════ */
 
+@layer base {
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -273,27 +273,30 @@ html {
 body {
   background: var(--paper);
   color: var(--ink-secondary);
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  /* Inter's optical sizing + contextual alternates; tabular figures are opted
-     into per-element so prose keeps proportional numerals. */
-  font-feature-settings: 'cv05' 1, 'cv11' 1, 'ss03' 1;
-  letter-spacing: -0.006em;
+  /* Tabular figures are opted into per-element so prose keeps proportional numerals. */
+  letter-spacing: -0.005em;
 }
 
-/* Fraunces at display sizes: the soft optical axis and low weight-contrast
-   keep it editorial rather than decorative. */
+/* Headings share the UI face; tighter tracking is what makes Geist read as a
+   title at larger sizes. */
 h1, h2, h3, .display {
-  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   color: var(--ink);
-  letter-spacing: -0.018em;
-  font-variation-settings: 'SOFT' 20, 'WONK' 0, 'opsz' 36;
+  letter-spacing: -0.022em;
 }
 
-code, pre, .mono, .tabular {
-  font-family: var(--font-jetbrains), ui-monospace, monospace;
-  font-feature-settings: 'zero' 1, 'ss02' 1;
+code, pre, .mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-feature-settings: 'zero' 1;
+  letter-spacing: 0;
+}
+
+/* Times and counts align by tabular figures, not by switching to monospace. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Numbers in tables must align vertically — always. */
@@ -305,12 +308,17 @@ table, .tabular-nums, [class*='tabular'] {
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
+}
 
 /* ═══ Component primitives ═══════════════════════════════════════════════
    Utility classes used across pages so the vocabulary stays consistent and a
    refinement lands everywhere at once.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Layered so Tailwind utilities can adjust these primitives in place
+   (`field pl-8`, `btn h-7 px-2.5`). Unlayered rules beat every layer, which
+   silently swallowed those utilities and let icons overlap field text. */
+@layer components {
 /* ── Surface: the card. Hairline + soft lift, never a hard grey box. ────── */
 .surface {
   background: var(--paper-raised);
@@ -340,7 +348,7 @@ table, .tabular-nums, [class*='tabular'] {
 }
 
 .eyebrow {
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-geist), sans-serif;
   font-size: 10.5px;
   font-weight: 650;
   letter-spacing: 0.085em;
@@ -350,7 +358,7 @@ table, .tabular-nums, [class*='tabular'] {
 }
 
 .counter {
-  font-family: var(--font-jetbrains), monospace;
+  font-family: var(--font-geist-mono), monospace;
   font-size: 11px;
   font-weight: 600;
   color: var(--ink-muted);
@@ -374,7 +382,7 @@ table, .tabular-nums, [class*='tabular'] {
   top: 0;
   z-index: 10;
   background: var(--paper-sunken);
-  padding: 0.6875rem 1.125rem;
+  padding: 0.5625rem 1rem;
   text-align: left;
   font-size: 10.5px;
   font-weight: 650;
@@ -387,7 +395,7 @@ table, .tabular-nums, [class*='tabular'] {
 }
 
 .data-table tbody td {
-  padding: 0.8125rem 1.125rem;
+  padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--rule-faint);
   color: var(--ink-secondary);
   vertical-align: middle;
@@ -672,6 +680,43 @@ table, .tabular-nums, [class*='tabular'] {
   box-shadow: var(--lift-flat);
 }
 
+/* ── Tabs: underline tabs for switching views of one record ─────────────
+   Lighter than .segmented — the tab strip is navigation, not a control. */
+.tabs {
+  display: flex;
+  gap: 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.5rem 0.125rem 0.625rem;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: color 150ms ease;
+}
+
+.tabs button:hover { color: var(--ink); }
+
+.tabs button[aria-selected='true'] { color: var(--ink); font-weight: 600; }
+
+.tabs button[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+}
+
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
 /* ── Switch ─────────────────────────────────────────────────────────────── */
 .switch {
   position: relative;
@@ -729,14 +774,14 @@ table, .tabular-nums, [class*='tabular'] {
 }
 .link-subtle:hover { color: var(--accent); }
 
-/* ── Page header: the serif title + rule that sets the editorial tone ───── */
+/* ── Page header title ──────────────────────────────────────────────────── */
 .page-title {
-  font-family: var(--font-fraunces), serif;
-  font-size: 1.0625rem;
+  font-family: var(--font-geist), sans-serif;
+  font-size: 1.25rem;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--ink);
-  letter-spacing: -0.02em;
-  font-variation-settings: 'SOFT' 20, 'opsz' 24;
+  letter-spacing: -0.025em;
 }
 
 /* Hairline that fades out — a printed rule, not a border. */
@@ -746,16 +791,15 @@ table, .tabular-nums, [class*='tabular'] {
   border: 0;
 }
 
-/* ── Stat figure: large tabular numeral in the display face ─────────────── */
+/* ── Stat figure: large tabular numeral ───────────────────────────────── */
 .stat-figure {
-  font-family: var(--font-fraunces), serif;
+  font-family: var(--font-geist), sans-serif;
   font-size: 1.625rem;
   font-weight: 600;
   line-height: 1;
   color: var(--ink);
   font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: -0.03em;
-  font-variation-settings: 'SOFT' 10, 'opsz' 40;
+  letter-spacing: -0.035em;
 }
 
 /* ── Nav ────────────────────────────────────────────────────────────────── */
@@ -799,12 +843,12 @@ table, .tabular-nums, [class*='tabular'] {
 
 /* ── Wordmark: letterspaced caps with the dot of the "i" in amber ───────── */
 .wordmark {
-  font-family: var(--font-fraunces), serif;
+  font-family: var(--font-geist), sans-serif;
   font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.26em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   color: var(--ink);
-  font-variation-settings: 'SOFT' 0, 'WONK' 1, 'opsz' 14;
+}
 }
 
 /* ═══ Chrome ═════════════════════════════════════════════════════════════ */

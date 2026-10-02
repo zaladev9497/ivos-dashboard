@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Badge from '@/components/Badge'
 import TimelineIcon from './TimelineIcon'
-import { formatDate, formatTime, formatDayFull, relativeTime } from '@/lib/utils'
+import { formatDate, formatTime, formatDayFull, relativeTime, stageLabel } from '@/lib/utils'
 
 function Chevron({ open }) {
   return (
@@ -209,7 +209,7 @@ export default function TimelineEntry({ item, showDate = false }) {
   const muted = item.status === 'suppressed' || item.status === 'cancelled'
 
   return (
-    <div className={`flex gap-3 py-2 ${item.upcoming ? 'opacity-80' : ''}`}>
+    <div className={`flex gap-3 py-2.5 ${item.upcoming ? 'opacity-80' : ''}`}>
       {/* Icon sits above the spine, with a paper ring punching the line out. */}
       <div className="relative z-1 mt-px shrink-0 rounded-full" style={{ boxShadow: '0 0 0 3px var(--paper-raised)' }}>
         <TimelineIcon kind={item.kind} tone={item.tone} />
@@ -219,11 +219,23 @@ export default function TimelineEntry({ item, showDate = false }) {
         {/* Title row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className="text-[13px] font-semibold leading-snug" style={{ color: 'var(--ink)' }}>
-              {item.title}
-            </span>
+            {expandable ? (
+              <button
+                type="button"
+                onClick={() => setOpen(v => !v)}
+                aria-expanded={open}
+                className="text-left text-[13px] font-semibold leading-snug transition-colors hover:text-[var(--accent)]"
+                style={{ color: 'var(--ink)' }}
+              >
+                {item.title}
+              </button>
+            ) : (
+              <span className="text-[13px] font-semibold leading-snug" style={{ color: 'var(--ink)' }}>
+                {item.title}
+              </span>
+            )}
             {item.status && !isRedirectedOnly && (
-              <Badge label={item.status} status={item.status} />
+              <Badge label={stageLabel(item.status)} status={item.status} />
             )}
           </div>
 
@@ -260,8 +272,8 @@ export default function TimelineEntry({ item, showDate = false }) {
               <button
                 onClick={() => setOpen(v => !v)}
                 className="btn btn-ghost mt-px h-5 w-5 p-0!"
-                aria-label={open ? 'Collapse' : 'Expand'}
-                aria-expanded={open}
+                tabIndex={-1}
+                aria-hidden="true"
               >
                 <Chevron open={open} />
               </button>
@@ -277,17 +289,6 @@ export default function TimelineEntry({ item, showDate = false }) {
           >
             {item.summary}
           </p>
-        )}
-
-        {/* Show details toggle */}
-        {expandable && !open && (
-          <button
-            onClick={() => setOpen(true)}
-            className="mt-1 text-[11.5px] font-medium transition-colors"
-            style={{ color: 'var(--ink-faint)' }}
-          >
-            Show details ›
-          </button>
         )}
 
         {open && <ExpandedContent item={item} />}

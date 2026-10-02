@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { pauseJourney, resumeJourney, cancelScheduledMessage, handBackToBot, sendMessageNow } from './actions'
-import { formatDate, templateLabel } from '@/lib/utils'
+import { formatDate, templateLabel, journeyTypeLabel } from '@/lib/utils'
 
 function ActionResult({ result }) {
   if (!result) return null
@@ -69,8 +69,13 @@ function JourneyActions({ journey }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mono text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>{journey.journey_type}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[13px]" style={{ color: 'var(--ink)' }}>
+          {journeyTypeLabel(journey.journey_type)} journey
+          <span className="ml-1.5 text-[12px]" style={{ color: isPaused ? 'var(--tone-warn-ink)' : 'var(--ink-muted)' }}>
+            {isPaused ? 'Paused' : 'Running'}
+          </span>
+        </span>
         {isPaused ? (
           <button onClick={handleResume} disabled={saving} className="btn btn-primary h-7 px-2.5 text-[11.5px]">
             {saving ? '…' : 'Resume journey'}
@@ -279,21 +284,20 @@ export default function LeadActions({ journeys, scheduledMessages, conversations
       <div className="section-head">
         <span className="eyebrow">Actions</span>
       </div>
-      <div className="divide-y px-5" style={{ borderColor: 'var(--rule-faint)' }}>
+      <div className="divide-y divide-[var(--rule-faint)] px-5">
         {actionableJourneys.length > 0 && (
-          <div className="space-y-2 py-3">
-            <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>Journey</p>
+          <div className="space-y-2 py-3.5">
             {actionableJourneys.map(j => <JourneyActions key={j.id} journey={j} />)}
           </div>
         )}
         {pendingMessages.length > 0 && (
-          <div className="space-y-2.5 py-3">
-            <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>Pending messages</p>
+          <div className="space-y-2.5 py-3.5">
+            <p className="eyebrow">Queued messages</p>
             {pendingMessages.map(m => <CancelMessageRow key={m.id} msg={m} demoMode={demoMode} />)}
           </div>
         )}
         {takeoverConvs.length > 0 && (
-          <div className="space-y-2 py-3">
+          <div className="space-y-2 py-3.5">
             {takeoverConvs.map(c => <HandBackRow key={c.id} conv={c} leadId={leadId} />)}
           </div>
         )}

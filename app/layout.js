@@ -1,28 +1,21 @@
-import { Inter, Fraunces, JetBrains_Mono } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 import ModeBanner from '@/components/ModeBanner'
 import { getBusinessCalendar } from '@/lib/queries'
 
-// Inter for data and UI — optical sizing keeps 11px labels crisp at table density.
-const inter = Inter({
-  variable: '--font-inter',
+// One family for the whole UI. Geist is drawn for interfaces: compact, even
+// texture at 12–14px, and a clean semibold for titles — so hierarchy comes
+// from weight and size rather than from a second, decorative face.
+const geist = Geist({
+  variable: '--font-geist',
   subsets: ['latin'],
   display: 'swap',
 })
 
-// Fraunces for headings and figures. A variable serif with a SOFT axis, so the
-// display face reads editorial rather than decorative.
-const fraunces = Fraunces({
-  variable: '--font-fraunces',
-  subsets: ['latin'],
-  display: 'swap',
-  axes: ['SOFT', 'WONK', 'opsz'],
-})
-
-// JetBrains Mono for IDs, phone numbers and error strings — slashed zero.
-const jetbrains = JetBrains_Mono({
-  variable: '--font-jetbrains',
+// Its mono sibling for phone numbers, IDs and error strings.
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
   subsets: ['latin'],
   display: 'swap',
 })
@@ -56,7 +49,7 @@ export default async function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

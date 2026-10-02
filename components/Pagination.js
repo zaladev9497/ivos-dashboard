@@ -9,7 +9,7 @@ export default function Pagination({ page, total, pageSize, onPage }) {
 
   return (
     <div
-      className="flex shrink-0 items-center justify-between gap-3 border-t px-5 py-3"
+      className="flex shrink-0 items-center justify-between gap-3 border-t px-4 py-2.5"
       style={{ borderColor: 'var(--rule-faint)', background: 'var(--paper-sunken)' }}
     >
       <p className="text-[11.5px]" style={{ color: 'var(--ink-muted)' }}>

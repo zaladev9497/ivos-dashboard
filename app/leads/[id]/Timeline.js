@@ -349,19 +349,16 @@ export default function Timeline(props) {
       )}
 
       {/* Past, grouped by day */}
-      <section className="surface overflow-hidden">
-        <div className="section-head">
-          <span className="eyebrow">Timeline</span>
-          {past.length > 0 && <span className="counter">{past.length}</span>}
-        </div>
+      {/* The tab above already names this panel, so it opens straight on the first day. */}
+      <section className="surface overflow-hidden" aria-label="Timeline">
         {past.length === 0 ? (
           <EmptyState title="No activity yet" description="Events appear here as the journey progresses." />
         ) : (
-          dayGroups.map(({ key, items: dayItems }) => (
+          dayGroups.map(({ key, items: dayItems }, gi) => (
             <div key={key}>
               {/* Day band — sticky, so the date stays with the rows while scrolling. */}
               <div
-                className="sticky top-0 z-10 border-y px-5 py-2 backdrop-blur-sm"
+                className={`sticky top-0 z-10 border-b px-5 py-2 backdrop-blur-sm ${gi > 0 ? 'border-t' : ''}`}
                 style={{
                   borderColor: 'var(--rule-faint)',
                   background: 'color-mix(in oklab, var(--paper-sunken) 88%, transparent)',

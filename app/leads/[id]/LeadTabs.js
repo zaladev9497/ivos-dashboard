@@ -15,8 +15,8 @@ export default function LeadTabs({ timeline, messages, messageCount = 0 }) {
   ]
 
   return (
-    <div className="space-y-4">
-      <div className="segmented" role="tablist" aria-label="Lead record view">
+    <div className="min-w-0 space-y-4">
+      <div className="tabs" role="tablist" aria-label="Lead record view">
         {tabs.map(t => (
           <button
             key={t.key}
